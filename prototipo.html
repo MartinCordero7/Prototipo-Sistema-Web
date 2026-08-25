@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototipo - Sistema Adquisicion de Stock</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --border-color: #d1d5db;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --error-color: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+        }
+
+        .form-card {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            background-color: #f9fafb;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: #ffffff;
+        }
+
+        .form-control:disabled {
+            background-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .checkbox-item label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+            font-weight: normal;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .stock-input {
+            width: 120px;
+            display: none; /* Oculto por defecto */
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:hover { background-color: var(--accent-hover); }
+
+        .acceptance-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .acceptance-container label {
+            font-size: 0.9rem;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+            display: none;
+        }
+
+        #resto-formulario {
+            display: none; /* Oculto hasta que la contraseña sea correcta */
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>Sistema de Adquisición Stock diario</h1>
+    <div class="form-card">
+        <form id="oecForm">
+            <!-- Estacion -->
+            <div class="form-group">
+                <label for="estacion">Estación de Servicio</label>
+                <select id="estacion" class="form-control">
+                    <option value="">-- Seleccione una Estación --</option>
+                    <option value="1">Estación Norte</option>
+                    <option value="2">Estación Sur</option>
+                    <option value="3">Estación Central</option>
+                </select>
+                <div class="error-message" id="error-estacion">Seleccione una estación.</div>
+            </div>
+
+            <!-- Contraseña -->
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" class="form-control" disabled placeholder="Contraseña requerida (ej. 12345)">
+                <div class="error-message" id="error-password">Contraseña incorrecta. (Prueba con: 12345)</div>
+            </div>
+
+            <div id="resto-formulario">
+                <!-- Centro de Distribucion -->
+                <div class="form-group">
+                    <label for="centro">Centro de Distribución</label>
+                    <select id="centro" class="form-control">
+                        <option value="">-- Seleccione un Centro --</option>
+                    </select>
+                    <div class="error-message" id="error-centro">Seleccione un centro.</div>
+                </div>
+
+                <!-- Fecha y hora -->
+                <div class="form-group">
+                    <label for="fecha">Fecha y Hora</label>
+                    <input type="datetime-local" id="fecha" class="form-control">
+                    <div class="error-message" id="error-fecha">Fecha inválida o requerida.</div>
+                </div>
+
+                <!-- Productos -->
+                <div class="form-group">
+                    <label>Productos (Seleccione al menos uno)</label>
+                    <div class="checkbox-group" id="productos-group">
+                        <div class="checkbox-item">
+                            <label><input type="checkbox" value="Diesel Premium" onchange="toggleStock(this, 'stock-1')"> Diesel Premium</label>
+                            <input type="text" id="stock-1" class="form-control stock-input" placeholder="Stock (ej. 100,5)" oninput="validarStock(this)">
+                        </div>
+                        <div class="checkbox-item">
+                            <label><input type="checkbox" value="Gasolina extra" onchange="toggleStock(this, 'stock-2')"> Gasolina extra</label>
+                            <input type="text" id="stock-2" class="form-control stock-input" placeholder="Stock (ej. 100,5)" oninput="validarStock(this)">
+                        </div>
+                        <div class="checkbox-item">
+                            <label><input type="checkbox" value="Gasolina extra con etanol" onchange="toggleStock(this, 'stock-3')"> Gasolina extra con etanol</label>
+                            <input type="text" id="stock-3" class="form-control stock-input" placeholder="Stock (ej. 100,5)" oninput="validarStock(this)">
+                        </div>
+                        <div class="checkbox-item">
+                            <label><input type="checkbox" value="Gasolina super" onchange="toggleStock(this, 'stock-4')"> Gasolina super</label>
+                            <input type="text" id="stock-4" class="form-control stock-input" placeholder="Stock (ej. 100,5)" oninput="validarStock(this)">
+                        </div>
+                        <div class="checkbox-item">
+                            <label><input type="checkbox" value="Gasolina pesca artesanal" onchange="toggleStock(this, 'stock-5')"> Gasolina pesca artesanal</label>
+                            <input type="text" id="stock-5" class="form-control stock-input" placeholder="Stock (ej. 100,5)" oninput="validarStock(this)">
+                        </div>
+                    </div>
+                    <div class="error-message" id="error-productos">Seleccione al menos un producto e ingrese un stock válido.</div>
+                </div>
+
+                <!-- Aceptacion -->
+                <div class="acceptance-container">
+                    <input type="checkbox" id="acepta">
+                    <label for="acepta">Acepta que los valores registrados corresponde a la realidad operativa del centro de distribución.</label>
+                </div>
+                <div class="error-message" id="error-acepta">Debe aceptar los términos para continuar.</div>
+
+                <button type="submit" class="btn-submit">Enviar Registro</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Datos simulados (Mock)
+    const MOCK_CENTROS = {
+        "1": [{ id: 101, nombre: "Centro Distribución Norte A" }, { id: 102, nombre: "Centro Distribución Norte B" }],
+        "2": [{ id: 201, nombre: "Centro Distribución Sur A" }],
+        "3": [{ id: 301, nombre: "Centro Central Principal" }]
+    };
+
+    const form = document.getElementById('oecForm');
+    const inputEstacion = document.getElementById('estacion');
+    const inputPassword = document.getElementById('password');
+    const inputCentro = document.getElementById('centro');
+    const inputFecha = document.getElementById('fecha');
+    const inputAcepta = document.getElementById('acepta');
+    const restoFormulario = document.getElementById('resto-formulario');
+
+    // Inicializar Fechas (Max: hoy, Min: hoy - 10 dias)
+    const formatDateTime = (date) => new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    
+    const hoy = new Date();
+    const hace10Dias = new Date(hoy);
+    hace10Dias.setDate(hoy.getDate() - 10);
+
+    inputFecha.max = formatDateTime(hoy);
+    inputFecha.min = formatDateTime(hace10Dias);
+
+    const showError = (id, show) => document.getElementById(id).style.display = show ? 'block' : 'none';
+
+    // Lógica Estación -> Habilitar Contraseña / Llenar Centros
+    inputEstacion.addEventListener('change', function() {
+        const val = this.value;
+        if(val) {
+            inputPassword.disabled = false;
+            
+            // Llenar centros
+            inputCentro.innerHTML = '<option value="">-- Seleccione un Centro --</option>';
+            MOCK_CENTROS[val].forEach(cen => {
+                inputCentro.innerHTML += `<option value="${cen.id}">${cen.nombre}</option>`;
+            });
+        } else {
+            inputPassword.disabled = true;
+            inputPassword.value = "";
+            inputCentro.innerHTML = '<option value="">-- Seleccione un Centro --</option>';
+            restoFormulario.style.display = 'none'; // Ocultar si resetea estación
+            showError('error-password', false);
+        }
+        
+        // Disparar validación de contraseña por si acaso
+        inputPassword.dispatchEvent(new Event('input'));
+    });
+
+    // Lógica Contraseña -> Mostrar el resto del formulario
+    inputPassword.addEventListener('input', function() {
+        if(this.value === '12345') {
+            restoFormulario.style.display = 'block';
+            showError('error-password', false);
+        } else {
+            restoFormulario.style.display = 'none';
+            if(this.value.length > 0) {
+                // Mostrar un pequeño error si está escribiendo mal pero omitir si está vacío
+                showError('error-password', this.value.length >= 5);
+            } else {
+                showError('error-password', false);
+            }
+        }
+    });
+
+    // Mostrar/Ocultar y resetear stock según checkbox
+    window.toggleStock = function(checkbox, stockInputId) {
+        const inputStock = document.getElementById(stockInputId);
+        if(checkbox.checked) {
+            inputStock.style.display = 'block';
+        } else {
+            inputStock.style.display = 'none';
+            inputStock.value = '';
+        }
+    }
+
+    // Validar formato de stock en vivo (solo números y coma, max 50000)
+    window.validarStock = function(input) {
+        let val = input.value.replace(/[^0-9,]/g, '');
+        const parts = val.split(',');
+        if (parts.length > 2) {
+            val = parts[0] + ',' + parts.slice(1).join('');
+        }
+
+        if (val !== '') {
+            let evalVal = parseFloat(val.replace(',', '.'));
+            if (evalVal > 50000) {
+                val = val.slice(0, -1); 
+            }
+        }
+        
+        input.value = val;
+    }
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        let valid = true;
+
+        if(!inputEstacion.value) { showError('error-estacion', true); valid = false; } else { showError('error-estacion', false); }
+        if(inputPassword.value !== '12345') { showError('error-password', true); valid = false; } else { showError('error-password', false); }
+        if(!inputCentro.value) { showError('error-centro', true); valid = false; } else { showError('error-centro', false); }
+        if(!inputFecha.value) { showError('error-fecha', true); valid = false; } else { showError('error-fecha', false); }
+
+        const checkboxes = document.querySelectorAll('#productos-group input[type="checkbox"]');
+        let productosSeleccionados = false;
+        let stocksValidos = true;
+
+        checkboxes.forEach((cb, index) => {
+            if(cb.checked) {
+                productosSeleccionados = true;
+                const stockVal = document.getElementById(`stock-${index+1}`).value;
+                if(stockVal === '' || stockVal === ',') {
+                    stocksValidos = false;
+                }
+            }
+        });
+
+        if(!productosSeleccionados || !stocksValidos) {
+            showError('error-productos', true);
+            valid = false;
+        } else {
+            showError('error-productos', false);
+        }
+
+        if(!inputAcepta.checked) { showError('error-acepta', true); valid = false; } else { showError('error-acepta', false); }
+
+        if(valid) {
+            alert('¡Formulario simulado enviado con éxito!\nTodo el prototipo funcionó correctamente.');
+        }
+    });
+</script>
+
+</body>
+</html>
