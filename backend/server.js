@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dataRoutes from './routes/dataRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { connectDB } from './db.js';
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 // Api Routes
 app.use('/api', dataRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.send('OEC Backend API is running.');

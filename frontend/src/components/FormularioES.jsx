@@ -51,6 +51,17 @@ const FormularioES = () => {
 
   const [errors, setErrors] = useState({});
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+
+  // Estados para el Modal de Configuración
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configData, setConfigData] = useState({
+    newEmail: '',
+    newPassword: '',
+    currentPassword: ''
+  });
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configError, setConfigError] = useState('');
+  const [configSuccess, setConfigSuccess] = useState('');
   
   const [runTour, setRunTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
@@ -199,11 +210,70 @@ const FormularioES = () => {
     navigate('/login');
   };
 
+  const handleConfigChange = (e) => {
+    setConfigData({
+      ...configData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setConfigError('');
+    setConfigSuccess('');
+
+    if (!configData.currentPassword) {
+      setConfigError('Debe ingresar su contraseña actual por seguridad.');
+      return;
+    }
+
+    setConfigLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/update-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userData.username,
+          currentPassword: configData.currentPassword,
+          newEmail: configData.newEmail,
+          newPassword: configData.newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setConfigSuccess(data.message);
+        
+        // Actualizar datos locales
+        const updatedUser = { ...userData, correo: data.updatedData.correo };
+        setUserData(updatedUser);
+        localStorage.setItem('userData', JSON.stringify(updatedUser));
+        
+        // Limpiar campos excepto correo si se quiere
+        setConfigData({ newEmail: '', newPassword: '', currentPassword: '' });
+        
+        setTimeout(() => {
+          setShowConfigModal(false);
+          setConfigSuccess('');
+        }, 2000);
+      } else {
+        setConfigError(data.message || 'Error al actualizar.');
+      }
+    } catch (err) {
+      console.error(err);
+      setConfigError('Error de conexión con el servidor.');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
   // Si no está autenticado, no renderizar nada para evitar destellos
   if (!localStorage.getItem('isAuthenticated')) return null;
 
   return (
-    <div className="form-card">
+    <div className="form-card" style={{ maxWidth: '650px', margin: '0 auto' }}>
       <Joyride 
         key={tourKey}
         steps={tourSteps}
@@ -230,9 +300,21 @@ const FormularioES = () => {
       <h2 className="form-title">Ingreso Diario de Operaciones</h2>
       
       {userData && (
-        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#e9f2ff', borderRadius: '8px', border: '1px solid #b8d4ff' }}>
-          <h3 style={{ margin: 0, color: '#1f315c', fontSize: '1.1rem' }}>{userData.nombre_estacion}</h3>
-          <p style={{ margin: '5px 0 0 0', color: '#4a5568', fontSize: '0.9rem' }}>Comercializadora: <strong>{userData.comercializadora}</strong></p>
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#e9f2ff', borderRadius: '8px', border: '1px solid #b8d4ff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h3 style={{ margin: 0, color: '#1f315c', fontSize: '1.1rem' }}>{userData.nombre_estacion}</h3>
+            <p style={{ margin: '5px 0 0 0', color: '#4a5568', fontSize: '0.9rem' }}>Comercializadora: <strong>{userData.comercializadora}</strong></p>
+          </div>
+          <button 
+            onClick={() => setShowConfigModal(true)}
+            style={{ 
+              background: 'none', border: 'none', color: 'var(--accent-color)', 
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', 
+              fontSize: '0.9rem', fontWeight: '600' 
+            }}
+          >
+            ⚙️ Configuración
+          </button>
         </div>
       )}
 
@@ -333,6 +415,83 @@ const FormularioES = () => {
       >
         ¿Necesitas ayuda?
       </button>
+      {/* Modal de Configuración */}
+      {showConfigModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: 'white', padding: '2rem', borderRadius: '12px',
+            maxWidth: '400px', width: '90%',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--accent-color)' }}>Actualizar Datos</h3>
+              <button 
+                onClick={() => setShowConfigModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#666' }}
+              >×</button>
+            </div>
+
+            {userData?.correo && (
+              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '6px' }}>
+                <strong>Correo actual registrado:</strong><br/> {userData.correo}
+              </p>
+            )}
+
+            <form onSubmit={handleUpdateProfile}>
+              <div className="form-group">
+                <label>Nuevo Correo Electrónico (opcional)</label>
+                <input 
+                  type="email" 
+                  name="newEmail"
+                  value={configData.newEmail}
+                  onChange={handleConfigChange}
+                  className="form-control"
+                  placeholder="ej. nuevo@empresa.com"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Nueva Contraseña (opcional)</label>
+                <input 
+                  type="password" 
+                  name="newPassword"
+                  value={configData.newPassword}
+                  onChange={handleConfigChange}
+                  className="form-control"
+                  placeholder="Dejar en blanco para no cambiar"
+                />
+              </div>
+
+              <hr style={{ margin: '1.5rem 0', borderTop: '1px solid #e5e7eb' }} />
+
+              <div className="form-group">
+                <label style={{ color: '#dc2626' }}>Contraseña Actual (Obligatoria)</label>
+                <input 
+                  type="password" 
+                  name="currentPassword"
+                  value={configData.currentPassword}
+                  onChange={handleConfigChange}
+                  className="form-control"
+                  placeholder="Ingrese su clave por seguridad"
+                  required
+                />
+              </div>
+
+              {configError && <span className="error-text" style={{ display: 'block', marginBottom: '1rem', textAlign: 'center' }}>{configError}</span>}
+              {configSuccess && <span style={{ display: 'block', marginBottom: '1rem', textAlign: 'center', color: '#16a34a', fontWeight: 'bold' }}>{configSuccess}</span>}
+
+              <button type="submit" className="btn-submit" disabled={configLoading}>
+                {configLoading ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

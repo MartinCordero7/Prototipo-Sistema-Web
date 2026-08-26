@@ -10,6 +10,9 @@ export const getCentrosDistribucionOracle = async (comercializadora) => {
     
     const query = `
       SELECT DISTINCT 
+          TRIM(CEX_APELLIDO_PATERNO) AS NOMBRE,
+          TRIM(CDI_IDENTIF) AS CODIGO_ARCH,
+          CDI_CODIGO_SEQ AS CODIGO_UNICO,
           TRIM(CEX_APELLIDO_PATERNO) || '/' || TRIM(CDI_IDENTIF) || '/' || CDI_CODIGO_SEQ AS DATO_CONCATENADO
       FROM CO.CO_VW_CENTROS_DISTRIB
       WHERE UPPER(DCA_NOM_VIG) IN ('REGISTRADO', 'SUSPENDIDO')
@@ -22,10 +25,13 @@ export const getCentrosDistribucionOracle = async (comercializadora) => {
     // Usamos outFormat: 4002 (OBJECT)
     const result = await connection.execute(query, { busqueda: busquedaParams }, { outFormat: 4002 });
     
-    // Mapeamos para que retorne { id, nombre }
+    // Mapeamos para que retorne { id, nombre, codigo_unico, codigo_arch }
     const centros = result.rows.map(row => ({
       id: row.DATO_CONCATENADO,
-      nombre: row.DATO_CONCATENADO
+      nombre: row.NOMBRE,
+      codigo_unico: row.CODIGO_UNICO,
+      codigo_arch: row.CODIGO_ARCH,
+      dato_concatenado: row.DATO_CONCATENADO
     }));
     
     return centros;
