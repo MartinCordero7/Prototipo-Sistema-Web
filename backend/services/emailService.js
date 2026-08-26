@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
 
@@ -28,8 +29,14 @@ const transporter = nodemailer.createTransport({
 export const enviarCredenciales = async (destinatario, username, password, nombreCentro) => {
   try {
     const htmlTemplate = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-        <div style="background-color: #1f315c; padding: 20px; text-align: center;">
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="margin: 0; padding: 20px; background-color: #f3f4f6;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+          <div style="background-color: #1f315c; padding: 20px; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">Sistema de Ingreso de Stock Diario</h1>
         </div>
         <div style="padding: 30px; background-color: #ffffff;">
@@ -48,15 +55,34 @@ export const enviarCredenciales = async (destinatario, username, password, nombr
           </div>
           
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">Este es un mensaje automático, por favor no responda a este correo.</p>
+          
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: left; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563;">
+            <p style="margin: 0 0 5px 0;">Saludos cordiales,</p>
+            <p style="margin: 0 0 2px 0; color: #111827;"><strong>Dirección Tecnica de Monitoreo, Estudios, Informacion y Estadistica</strong></p>
+            <p style="margin: 0 0 2px 0;">Calle Estadio N10-285 y Manuela Cañizares</p>
+            <p style="margin: 0 0 2px 0;">(593) 399-6500</p>
+            <p style="margin: 0 0 2px 0;">Codigo postal: 170803 / Quito - Ecuador</p>
+            <p style="margin: 0 0 15px 0;"><a href="https://www.controlhidrocarburos.gob.ec" style="color: #3b82f6; text-decoration: none;">www.controlhidrocarburos.gob.ec</a></p>
+            <img src="cid:logoarch" alt="Logo Institucional" style="max-height: 70px;" />
+          </div>
         </div>
       </div>
+      </body>
+      </html>
     `;
 
     const mailOptions = {
       from: `"ARCH Stock Control" <${process.env.SMTP_USER || 'no-reply@controlhidrocarburos.gob.ec'}>`,
       to: destinatario,
       subject: 'Credenciales de Acceso - Sistema de Stock Diario',
-      html: htmlTemplate
+      html: htmlTemplate,
+      attachments: [
+        {
+          filename: 'logo.png',
+          path: path.resolve(process.cwd(), '../frontend/Images/Logo ARCH Jun 2026.png'),
+          cid: 'logoarch'
+        }
+      ]
     };
 
     // Si estamos en un entorno sin credenciales reales configuradas,
@@ -87,8 +113,14 @@ export const enviarAlertaIncumplimiento = async (correo, nombreCentro) => {
     to: correo,
     subject: '⚠️ Alerta de Incumplimiento: Ingreso de Stock Diario',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-        <div style="background-color: #d32f2f; color: white; padding: 20px; text-align: center;">
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="margin: 0; padding: 20px; background-color: #f9f9f9;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+          <div style="background-color: #d32f2f; color: white; padding: 20px; text-align: center;">
           <h2 style="margin: 0;">Alerta de Incumplimiento</h2>
         </div>
         <div style="padding: 30px; background-color: #f9f9f9; color: #333;">
@@ -102,10 +134,31 @@ export const enviarAlertaIncumplimiento = async (correo, nombreCentro) => {
           <p style="font-size: 14px; color: #666; margin-top: 30px; text-align: center;">
             Este es un correo automático. Si ya realizó su registro, por favor ignore este mensaje.
           </p>
+          
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: left; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563;">
+            <p style="margin: 0 0 5px 0;">Saludos cordiales,</p>
+            <p style="margin: 0 0 2px 0; color: #111827;"><strong>Dirección Técnica de Monitoreo, Estudios, Información y Estadística</strong></p>
+            <p style="margin: 0 0 2px 0;">Calle Estadio N10-285 y Manuela Cañizares</p>
+            <p style="margin: 0 0 2px 0;">(593) 399-6500</p>
+            <p style="margin: 0 0 2px 0;">Código postal: 170803 / Quito - Ecuador</p>
+            <p style="margin: 0 0 15px 0;"><a href="https://www.controlhidrocarburos.gob.ec" style="color: #3b82f6; text-decoration: none;">www.controlhidrocarburos.gob.ec</a></p>
+            <img src="cid:logoarch" alt="Logo Institucional" style="max-height: 70px;" />
+          </div>
         </div>
       </div>
+      </body>
+      </html>
     `
   };
+
+  // Agregar los attachments si no estaban
+  mailOptions.attachments = [
+    {
+      filename: 'logo.png',
+      path: path.resolve(process.cwd(), '../frontend/Images/Logo ARCH Jun 2026.png'),
+      cid: 'logoarch'
+    }
+  ];
 
   try {
     const info = await transporter.sendMail(mailOptions);
