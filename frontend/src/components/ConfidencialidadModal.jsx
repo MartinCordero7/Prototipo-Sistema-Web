@@ -28,6 +28,8 @@ const ConfidencialidadModal = () => {
         <p style={{ textAlign: 'center', lineHeight: '1.6', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
           El ingreso de la información en este sistema es de carácter <strong>estrictamente confidencial</strong>. <br/><br/>
           Los datos proporcionados serán utilizados exclusivamente con fines de realizar procesos de regulación y control.
+          <br/><br/>
+          Para conocer más acerca del tratamiento de sus datos, puede consultar la <a href="https://controlhidrocarburos.gob.ec/wp-content/uploads/downloads/2026/05/Ley-Organica-de-Proteccion-de-Datos-Personales.pdf" target="_blank" rel="noopener noreferrer" style={{color: 'var(--accent-color)', fontWeight: 'bold', textDecoration: 'underline'}}>LEY ORGÁNICA DE PROTECCIÓN DE DATOS PERSONALES</a>.
         </p>
         <button className="btn-submit" onClick={handleClose}>
           He leído y entendido

@@ -19,9 +19,9 @@ export const getCentrosHandler = async (req, res) => {
 
 export const submitFormHandler = async (req, res) => {
   const formData = req.body;
-
+  
   if (!formData.centroId || !formData.fecha || !formData.correoUsuario || !formData.nombreCentro) {
-    return res.status(400).json({ success: false, message: 'Faltan campos requeridos en el formulario.' });
+    return res.status(400).json({ success: false, message: 'Faltan campos requeridos en el formulario (incluyendo el correo electrónico).' });
   }
 
   if (!formData.productosSeleccionados || formData.productosSeleccionados.length === 0) {
@@ -31,23 +31,46 @@ export const submitFormHandler = async (req, res) => {
   try {
     const authDb = await getAuthDb();
     
-    // Iterar sobre los productos seleccionados y guardar una fila por cada uno
-    for (const producto of formData.productosSeleccionados) {
-      const cantidad = formData.stocks[producto];
-      if (cantidad && parseInt(cantidad, 10) > 0) {
-        await authDb.run(`
-          INSERT INTO stock_diario (fecha_stock, correo_usuario, nombre_centro, producto, cantidad, acepta_envio)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `, [
-          formData.fecha, 
-          formData.correoUsuario, 
-          formData.nombreCentro, 
-          producto, 
-          parseInt(cantidad, 10), 
-          formData.aceptaRealidad ? 1 : 0
-        ]);
+    // Calcular hora de Ecuador (GMT-5) explícita
+    const ecuadorTime = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Guayaquil"}));
+    
+    // Formatear a YYYY-MM-DD HH:MM:SS
+    const pad = (n) => n.toString().padStart(2, '0');
+    const marcaTemporal = `${ecuadorTime.getFullYear()}-${pad(ecuadorTime.getMonth() + 1)}-${pad(ecuadorTime.getDate())} ${pad(ecuadorTime.getHours())}:${pad(ecuadorTime.getMinutes())}:${pad(ecuadorTime.getSeconds())}`;
+
+    // Extraer cantidades por producto
+    const getStock = (nombreProd) => {
+      if (formData.productosSeleccionados.includes(nombreProd) && formData.stocks[nombreProd]) {
+        return parseInt(formData.stocks[nombreProd], 10);
       }
-    }
+      return 0;
+    };
+
+    const dieselPremium = getStock('Diésel Premium');
+    const gasolinaExtra = getStock('Gasolina Extra');
+    const gasolinaExtraEtanol = getStock('Gasolina Extra con Etanol');
+    const gasolinaSuper = getStock('Gasolina Súper');
+    const gasolinaPesca = getStock('Gasolina Pesca Artesanal');
+
+    await authDb.run(`
+      INSERT INTO stock_diario (
+        marca_temporal, fecha_stock, correo_usuario, nombre_centro,
+        diesel_premium, gasolina_extra, gasolina_extra_etanol, gasolina_super, gasolina_pesca_artesanal,
+        acepta_envio
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      marcaTemporal,
+      formData.fecha, // Fecha exacta elegida por el usuario
+      formData.correoUsuario,
+      formData.nombreCentro,
+      dieselPremium,
+      gasolinaExtra,
+      gasolinaExtraEtanol,
+      gasolinaSuper,
+      gasolinaPesca,
+      formData.aceptaRealidad ? 1 : 0
+    ]);
 
     return res.json({ success: true, message: 'Stock guardado exitosamente.' });
   } catch (error) {

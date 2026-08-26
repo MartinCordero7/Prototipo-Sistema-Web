@@ -8,6 +8,12 @@ const AuditorDashboard = () => {
   const [error, setError] = useState('');
   const [comercializadora, setComercializadora] = useState('');
   const [filtro, setFiltro] = useState('TODOS');
+  
+  // Obtener fecha local actual en YYYY-MM-DD
+  const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+  const localISODate = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+  const [fechaFiltro, setFechaFiltro] = useState(localISODate);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,13 +33,14 @@ const AuditorDashboard = () => {
     }
 
     setComercializadora(user.comercializadora);
-    fetchData(user.comercializadora);
-  }, [navigate]);
+    fetchData(user.comercializadora, fechaFiltro);
+  }, [navigate, fechaFiltro]); // Refresh al cambiar la fecha
 
-  const fetchData = async (comercializadoraName) => {
+  const fetchData = async (comercializadoraName, fecha) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/auditor/estado-diario?comercializadora=${encodeURIComponent(comercializadoraName)}`);
+      const url = `http://localhost:3000/api/auditor/estado-diario?comercializadora=${encodeURIComponent(comercializadoraName)}&fecha=${fecha}`;
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.success) {
@@ -152,19 +159,30 @@ const AuditorDashboard = () => {
 
       {/* Tabla de Detalle */}
       <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', backgroundColor: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', backgroundColor: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Detalle por Estación de Servicio</h3>
-          <div>
-            <label style={{ marginRight: '0.5rem', fontWeight: 'bold', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Filtrar por estado:</label>
-            <select 
-              value={filtro} 
-              onChange={(e) => setFiltro(e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', backgroundColor: 'white', color: 'var(--text-primary)' }}
-            >
-              <option value="TODOS">Todos</option>
-              <option value="COMPLETADO">Completados</option>
-              <option value="PENDIENTE">Pendientes</option>
-            </select>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <label style={{ marginRight: '0.5rem', fontWeight: 'bold', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Fecha:</label>
+              <input 
+                type="date" 
+                value={fechaFiltro}
+                onChange={(e) => setFechaFiltro(e.target.value)}
+                style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', backgroundColor: 'white', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <div>
+              <label style={{ marginRight: '0.5rem', fontWeight: 'bold', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Estado:</label>
+              <select 
+                value={filtro} 
+                onChange={(e) => setFiltro(e.target.value)}
+                style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', backgroundColor: 'white', color: 'var(--text-primary)' }}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="COMPLETADO">Completados</option>
+                <option value="PENDIENTE">Pendientes</option>
+              </select>
+            </div>
           </div>
         </div>
         <div style={{ overflowX: 'auto' }}>

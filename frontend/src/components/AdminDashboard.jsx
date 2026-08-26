@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('bloqueos'); // 'bloqueos' o 'horarios'
+  const [activeTab, setActiveTab] = useState('bloqueos'); // 'bloqueos', 'horarios', 'alertas'
   const [blockedUsers, setBlockedUsers] = useState([]);
+  const [alertasHistory, setAlertasHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -34,7 +35,23 @@ const AdminDashboard = () => {
 
     fetchBlockedUsers();
     fetchConfig();
+    fetchAlertasHistory();
   }, [navigate]);
+
+  const fetchAlertasHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3000/api/admin/alertas');
+      const data = await response.json();
+      if (data.success) {
+        setAlertasHistory(data.data);
+      }
+    } catch (err) {
+      console.error('Error obteniendo historial de alertas:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchConfig = async () => {
     try {
@@ -273,6 +290,86 @@ const AdminDashboard = () => {
     </div>
   );
 
+  const renderAlertasHistory = () => (
+    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h2 className="form-title" style={{ color: 'var(--primary-color)', margin: 0 }}>Historial de Alertas de Incumplimiento</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Registro automático de los correos enviados a las estaciones que no declararon su stock a tiempo.</p>
+        </div>
+        <button 
+          onClick={fetchAlertasHistory} 
+          style={{
+            backgroundColor: 'white',
+            color: 'var(--accent-color)',
+            border: '1px solid var(--accent-color)',
+            padding: '0.5rem 1rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => { e.target.style.backgroundColor = 'var(--accent-color)'; e.target.style.color = 'white'; }}
+          onMouseOut={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'var(--accent-color)'; }}
+        >
+          ↻ Actualizar Historial
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Cargando historial...</div>
+      ) : alertasHistory.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', backgroundColor: 'white', borderRadius: '12px', border: '1px dashed #d1d5db', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✉️</div>
+          <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Bandeja Limpia</h3>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Aún no se han enviado alertas automáticas de incumplimiento.</p>
+        </div>
+      ) : (
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Fecha y Hora</th>
+                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Centro de Distribución</th>
+                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Correo Destinatario</th>
+                  <th style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#4b5563', fontWeight: '600' }}>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {alertasHistory.map((alerta) => (
+                  <tr key={alerta.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background-color 0.1s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      {new Date(alerta.fecha_emision).toLocaleString()}
+                    </td>
+                    <td style={{ padding: '1rem 1.5rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>
+                      {alerta.nombre_centro}
+                    </td>
+                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)' }}>
+                      {alerta.correo_destinatario}
+                    </td>
+                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        backgroundColor: alerta.estado === 'Enviado' ? '#d1fae5' : '#fee2e2',
+                        color: alerta.estado === 'Enviado' ? '#065f46' : '#991b1b'
+                      }}>
+                        {alerta.estado}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f3f4f6', margin: '-2rem' }}>
       <style>
@@ -342,6 +439,14 @@ const AdminDashboard = () => {
             <span style={{ fontSize: '1.2rem' }}>⏱️</span>
             Horarios del Sistema
           </button>
+
+          <button 
+            className={`sidebar-btn ${activeTab === 'alertas' ? 'active' : ''}`}
+            onClick={() => setActiveTab('alertas')}
+          >
+            <span style={{ fontSize: '1.2rem' }}>✉️</span>
+            Historial de Alertas
+          </button>
         </nav>
       </aside>
 
@@ -349,6 +454,7 @@ const AdminDashboard = () => {
       <main style={{ flex: 1, padding: '3rem', overflowY: 'auto' }}>
         {activeTab === 'bloqueos' && renderBlockedUsers()}
         {activeTab === 'horarios' && renderScheduleConfig()}
+        {activeTab === 'alertas' && renderAlertasHistory()}
       </main>
 
       {/* Modal de Confirmación */}

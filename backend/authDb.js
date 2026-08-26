@@ -32,15 +32,32 @@ export const getAuthDb = async () => {
   `);
 
   await db.exec(`
+    DROP TABLE IF EXISTS stock_diario;
+  `);
+
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS stock_diario (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      marca_temporal DATETIME DEFAULT CURRENT_TIMESTAMP,
+      marca_temporal TEXT NOT NULL,
       fecha_stock TEXT NOT NULL,
       correo_usuario TEXT NOT NULL,
       nombre_centro TEXT NOT NULL,
-      producto TEXT NOT NULL,
-      cantidad INTEGER NOT NULL,
+      diesel_premium INTEGER DEFAULT 0,
+      gasolina_extra INTEGER DEFAULT 0,
+      gasolina_extra_etanol INTEGER DEFAULT 0,
+      gasolina_super INTEGER DEFAULT 0,
+      gasolina_pesca_artesanal INTEGER DEFAULT 0,
       acepta_envio INTEGER NOT NULL
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS alertas_diarias (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha_emision DATETIME DEFAULT CURRENT_TIMESTAMP,
+      correo_destinatario TEXT NOT NULL,
+      nombre_centro TEXT NOT NULL,
+      estado TEXT NOT NULL
     );
   `);
 

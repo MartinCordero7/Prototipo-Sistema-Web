@@ -80,3 +80,39 @@ export const enviarCredenciales = async (destinatario, username, password, nombr
     return false;
   }
 };
+
+export const enviarAlertaIncumplimiento = async (correo, nombreCentro) => {
+  const mailOptions = {
+    from: `"Control de Hidrocarburos" <${process.env.SMTP_USER}>`,
+    to: correo,
+    subject: '⚠️ Alerta de Incumplimiento: Ingreso de Stock Diario',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #d32f2f; color: white; padding: 20px; text-align: center;">
+          <h2 style="margin: 0;">Alerta de Incumplimiento</h2>
+        </div>
+        <div style="padding: 30px; background-color: #f9f9f9; color: #333;">
+          <p style="font-size: 16px;">Estimado usuario del centro <strong>${nombreCentro}</strong>,</p>
+          <p style="font-size: 16px; line-height: 1.5;">
+            El sistema ha detectado que ha finalizado el horario establecido para el registro de inventario diario y <strong>no hemos recibido su declaración de stock</strong>.
+          </p>
+          <p style="font-size: 16px; line-height: 1.5;">
+            Le recordamos que el ingreso de esta información es obligatorio. Por favor, regularice su situación a la brevedad posible.
+          </p>
+          <p style="font-size: 14px; color: #666; margin-top: 30px; text-align: center;">
+            Este es un correo automático. Si ya realizó su registro, por favor ignore este mensaje.
+          </p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Correo de alerta enviado a ${correo}: ${info.messageId}`);
+    return true;
+  } catch (error) {
+    console.error(`Error al enviar correo de alerta a ${correo}:`, error);
+    throw error;
+  }
+};

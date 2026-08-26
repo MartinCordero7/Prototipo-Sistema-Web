@@ -81,3 +81,16 @@ export const updateConfigHandler = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
 };
+
+export const getAlertasHistory = async (req, res) => {
+  try {
+    const authDb = await getAuthDb();
+    const alertas = await authDb.all(
+      'SELECT id, fecha_emision, correo_destinatario, nombre_centro, estado FROM alertas_diarias ORDER BY fecha_emision DESC'
+    );
+    return res.json({ success: true, data: alertas });
+  } catch (error) {
+    console.error('Error obteniendo historial de alertas:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};

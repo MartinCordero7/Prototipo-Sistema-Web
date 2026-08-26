@@ -63,6 +63,8 @@ const FormularioES = () => {
   const [configError, setConfigError] = useState('');
   const [configSuccess, setConfigSuccess] = useState('');
   
+  const [customAlert, setCustomAlert] = useState({ show: false, type: 'success', title: '', message: '' });
+  
   const [runTour, setRunTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
 
@@ -169,6 +171,10 @@ const FormularioES = () => {
 
     if (!formData.aceptaRealidad) formErrors.aceptaRealidad = 'Debe aceptar los términos';
 
+    if (!userData.correo) {
+      formErrors.correo = 'Debe configurar su correo electrónico en "Configuración" antes de enviar el formulario.';
+    }
+
     // === VALIDACIÓN: Bloqueo por día y centro ===
     if (formData.fecha && formData.centroId) {
       const selectedDate = formData.fecha.split('T')[0];
@@ -206,7 +212,7 @@ const FormularioES = () => {
         if (data.success) {
           submittedRecords.push(validationKey);
           localStorage.setItem('submittedRecords', JSON.stringify(submittedRecords));
-          alert('Datos guardados exitosamente en la base de datos.');
+          setCustomAlert({ show: true, type: 'success', title: '¡Éxito!', message: 'Datos guardados exitosamente en la base de datos.' });
           
           // Limpiar el formulario
           setFormData({
@@ -217,12 +223,12 @@ const FormularioES = () => {
             aceptaRealidad: false
           });
         } else {
-          alert('Error al guardar: ' + data.message);
+          setCustomAlert({ show: true, type: 'error', title: 'Error al Guardar', message: data.message });
         }
       })
       .catch(error => {
         console.error('Error enviando formulario:', error);
-        alert('Error de conexión con el servidor.');
+        setCustomAlert({ show: true, type: 'error', title: 'Error de Conexión', message: 'No se pudo contactar con el servidor. Revise su conexión.' });
       });
     }
   };
@@ -266,7 +272,7 @@ const FormularioES = () => {
       const data = await response.json();
 
       if (data.success) {
-        setConfigSuccess(data.message);
+        setCustomAlert({ show: true, type: 'success', title: '¡Actualizado!', message: data.message });
         
         // Actualizar datos locales
         const updatedUser = { ...userData, correo: data.updatedData.correo };
@@ -278,14 +284,13 @@ const FormularioES = () => {
         
         setTimeout(() => {
           setShowConfigModal(false);
-          setConfigSuccess('');
         }, 2000);
       } else {
-        setConfigError(data.message || 'Error al actualizar.');
+        setCustomAlert({ show: true, type: 'error', title: 'Error al Actualizar', message: data.message || 'Error al actualizar.' });
       }
     } catch (err) {
       console.error(err);
-      setConfigError('Error de conexión con el servidor.');
+      setCustomAlert({ show: true, type: 'error', title: 'Error de Conexión', message: 'Error de conexión con el servidor.' });
     } finally {
       setConfigLoading(false);
     }
@@ -401,6 +406,12 @@ const FormularioES = () => {
           </label>
         </div>
         {errors.aceptaRealidad && <span className="error-text">{errors.aceptaRealidad}</span>}
+        
+        {errors.correo && (
+          <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #f87171', fontWeight: 'bold' }}>
+            ⚠️ {errors.correo}
+          </div>
+        )}
 
         <button type="submit" className="btn-submit step-submit">Enviar Datos</button>
       </form>
@@ -514,6 +525,48 @@ const FormularioES = () => {
           </div>
         </div>
       )}
+      {/* MODAL CUSTOM ALERT (Reemplazo del alert nativo) */}
+      {customAlert.show && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000, backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            background: 'white', padding: '2.5rem 2rem', borderRadius: '16px',
+            maxWidth: '400px', width: '90%', textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderTop: `6px solid ${customAlert.type === 'success' ? '#10b981' : '#ef4444'}`
+          }}>
+            <div style={{ 
+              fontSize: '3rem', 
+              marginBottom: '1rem',
+              color: customAlert.type === 'success' ? '#10b981' : '#ef4444'
+            }}>
+              {customAlert.type === 'success' ? '✅' : '❌'}
+            </div>
+            <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937', fontSize: '1.5rem', fontWeight: 'bold' }}>
+              {customAlert.title}
+            </h2>
+            <p style={{ color: '#4b5563', marginBottom: '2rem', lineHeight: '1.6', fontSize: '1.05rem' }}>
+              {customAlert.message}
+            </p>
+            <button 
+              onClick={() => setCustomAlert({ ...customAlert, show: false })}
+              style={{
+                backgroundColor: customAlert.type === 'success' ? '#10b981' : '#ef4444',
+                color: 'white', border: 'none', padding: '0.75rem 2rem',
+                borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold',
+                cursor: 'pointer', width: '100%', transition: 'background-color 0.2s'
+              }}
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
