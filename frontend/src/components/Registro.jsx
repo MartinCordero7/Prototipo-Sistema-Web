@@ -5,7 +5,7 @@ const COMERCIALIZADORAS = [
   'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
   'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
   'Masgas', 'Pdv Ecuador', 'Petroleos y servicios', 'Petrolrios', 
-  'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel'
+  'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel', 'Test'
 ];
 
 const Registro = () => {

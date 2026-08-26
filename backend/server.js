@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import dataRoutes from './routes/dataRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import auditorRoutes from './routes/auditorRoutes.js';
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Api Routes
+app.use('/api', dataRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auditor', auditorRoutes);

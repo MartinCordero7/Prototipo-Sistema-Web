@@ -31,6 +31,19 @@ export const getAuthDb = async () => {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS stock_diario (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      marca_temporal DATETIME DEFAULT CURRENT_TIMESTAMP,
+      fecha_stock TEXT NOT NULL,
+      correo_usuario TEXT NOT NULL,
+      nombre_centro TEXT NOT NULL,
+      producto TEXT NOT NULL,
+      cantidad INTEGER NOT NULL,
+      acepta_envio INTEGER NOT NULL
+    );
+  `);
+
   await db.run(`
     INSERT OR IGNORE INTO configuracion (llave, valor)
     VALUES ('hora_cierre', '12')

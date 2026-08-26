@@ -1,6 +1,17 @@
 import { getConnection } from '../db.js';
 
 export const getCentrosDistribucionOracle = async (comercializadora) => {
+  // Mock para pruebas locales sin datos reales en Oracle
+  if (comercializadora.toUpperCase() === 'TEST') {
+    return [{
+      id: 'Test/82PR123/123',
+      nombre: 'Test',
+      codigo_unico: '123',
+      codigo_arch: '82PR123',
+      dato_concatenado: 'Test/82PR123/123'
+    }];
+  }
+
   let connection;
   try {
     connection = await getConnection();

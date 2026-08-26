@@ -184,23 +184,45 @@ const FormularioES = () => {
     setErrors(formErrors);
 
     if (Object.keys(formErrors).length === 0) {
-      // Guardar la fecha y centro como completado
+      // Guardar la fecha y centro localmente para validaciones futuras rápidas
       const selectedDate = formData.fecha.split('T')[0];
       const validationKey = `${formData.centroId}_${selectedDate}`;
       const submittedRecords = JSON.parse(localStorage.getItem('submittedRecords') || '[]');
       
-      submittedRecords.push(validationKey);
-      localStorage.setItem('submittedRecords', JSON.stringify(submittedRecords));
-
-      alert('Formulario enviado correctamente:\\n' + JSON.stringify(formData, null, 2));
-      
-      // Limpiar el formulario
-      setFormData({
-        centroId: '',
-        fecha: '',
-        productosSeleccionados: [],
-        stocks: {},
-        aceptaRealidad: false
+      // Armar la petición al backend
+      fetch('http://localhost:3000/api/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...formData,
+          correoUsuario: userData.correo,
+          nombreCentro: userData.nombre_estacion
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          submittedRecords.push(validationKey);
+          localStorage.setItem('submittedRecords', JSON.stringify(submittedRecords));
+          alert('Datos guardados exitosamente en la base de datos.');
+          
+          // Limpiar el formulario
+          setFormData({
+            centroId: '',
+            fecha: '',
+            productosSeleccionados: [],
+            stocks: {},
+            aceptaRealidad: false
+          });
+        } else {
+          alert('Error al guardar: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error enviando formulario:', error);
+        alert('Error de conexión con el servidor.');
       });
     }
   };

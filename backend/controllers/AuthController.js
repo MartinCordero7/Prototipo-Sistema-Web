@@ -1,4 +1,5 @@
 import { getAuthDb } from '../authDb.js';
+import { enviarCredenciales } from '../services/emailService.js';
 
 export const loginHandler = async (req, res) => {
   const { username, password } = req.body;
@@ -151,13 +152,29 @@ export const registerHandler = async (req, res) => {
     const tempPassword = Math.random().toString(36).slice(-8);
 
     const newId = `ES_${codigoArch}_${Date.now()}`;
-    const concatName = `${nombreCentro}/${codigoUnico}/${codigoArch}`;
+    const concatName = `${nombreCentro}/${codigoArch}/${codigoUnico}`;
     await authDb.run(`
       INSERT INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, correo, cambio_clave_pendiente)
       VALUES (?, ?, ?, ?, ?, 0, NULL, ?, 1)
     `, [newId, generatedUsername, tempPassword, concatName, comercializadora, correo]);
 
-    return res.status(201).json({ success: true, message: `Registro exitoso. Su usuario asignado es: ${generatedUsername}`, username: generatedUsername });
+    // Enviar correo con las credenciales usando Carbonio (SMTP)
+    await enviarCredenciales(correo, generatedUsername, tempPassword, nombreCentro);
+
+    // Funcionalidad didáctica: Si es comercializadora Test, eliminar después de 5 minutos
+    if (comercializadora.toUpperCase() === 'TEST') {
+      setTimeout(async () => {
+        try {
+          const db = await getAuthDb();
+          await db.run('DELETE FROM usuarios WHERE username = ?', [generatedUsername]);
+          console.log(`[Auto-Limpieza] Usuario de prueba '${generatedUsername}' eliminado tras 5 minutos.`);
+        } catch (err) {
+          console.error('Error en auto-limpieza de usuario de prueba:', err);
+        }
+      }, 5 * 60 * 1000); // 5 minutos
+    }
+
+    return res.status(201).json({ success: true, message: `Registro exitoso. Se enviaron las credenciales al correo: ${correo}`, username: generatedUsername });
 
   } catch (error) {
     console.error('Error al registrar usuario en SQLite:', error);
