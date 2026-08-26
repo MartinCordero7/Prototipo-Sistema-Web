@@ -70,8 +70,14 @@ const ChangePassword = () => {
         const updatedUser = { ...userData, requirePasswordChange: false };
         localStorage.setItem('userData', JSON.stringify(updatedUser));
         
-        // Redirigir al formulario
-        navigate('/formulario');
+        // Redirigir según el rol
+        if (updatedUser.comercializadora === 'ADMINISTRADOR') {
+          navigate('/admin-dashboard');
+        } else if (updatedUser.nombre_estacion === 'AUDITORIA') {
+          navigate('/auditor-dashboard');
+        } else {
+          navigate('/formulario');
+        }
       } else {
         setError(data.message || 'Error al cambiar la contraseña');
       }

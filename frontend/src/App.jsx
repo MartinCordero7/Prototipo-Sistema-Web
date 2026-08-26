@@ -6,6 +6,7 @@ import FormularioES from './components/FormularioES'
 import ConfidencialidadModal from './components/ConfidencialidadModal'
 import ChangePassword from './components/ChangePassword'
 import AdminDashboard from './components/AdminDashboard'
+import AuditorDashboard from './components/AuditorDashboard'
 import logo from '../Images/Logo ARCH Jun 2026.png'
 
 const Header = () => {
@@ -59,6 +60,7 @@ function App() {
             <Route path="/formulario" element={<FormularioES />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/auditor-dashboard" element={<AuditorDashboard />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>

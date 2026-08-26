@@ -76,9 +76,25 @@ export const getAuthDb = async () => {
   // Insertar usuario de prueba didáctico
   await db.run(`
     INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
-    VALUES ('test_id', 'test_user', 'password123', 'ESTACION DE PRUEBAS', 'PRIMAX', 0, NULL, 1)
+    VALUES ('test_id', 'test_user', 'password123', 'ESTACION DE PRUEBA', 'TERPEL', 0, NULL, 1)
   `);
+
+  // Crear cuentas maestras para los 19 sujetos de control (Auditores)
+  const COMERCIALIZADORAS = [
+    'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
+    'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
+    'Masgas', 'Pdv Ecuador', 'Petroleos y servicios', 'Petrolrios', 
+    'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel'
+  ];
+
+  for (const org of COMERCIALIZADORAS) {
+    const username = `auditor_${org.toLowerCase().replace(/ /g, '_')}`;
+    const id = `aud_${org.replace(/ /g, '')}`;
+    await db.run(`
+      INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
+      VALUES (?, ?, ?, ?, ?, 0, NULL, 1)
+    `, [id, username, 'auditor123', 'AUDITORIA', org.toUpperCase()]);
+  }
 
   return db;
 };
-

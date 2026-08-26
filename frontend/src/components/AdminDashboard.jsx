@@ -121,11 +121,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    navigate('/login');
-  };
-
   const renderScheduleConfig = () => (
     <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
       <h2 className="form-title" style={{ color: 'var(--primary-color)' }}>Configuración Global del Sistema</h2>
@@ -303,17 +298,13 @@ const AdminDashboard = () => {
             border-left: 4px solid transparent;
           }
           .sidebar-btn:hover {
-            background-color: #1f2937;
+            background-color: var(--accent-hover);
             color: white;
           }
           .sidebar-btn.active {
-            background-color: #1f2937;
+            background-color: var(--accent-hover);
             color: white;
-            border-left-color: #3b82f6; /* Blue accent */
-          }
-          .sidebar-btn.logout:hover {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
+            border-left-color: white;
           }
         `}
       </style>
@@ -321,14 +312,14 @@ const AdminDashboard = () => {
       {/* Sidebar (Menú Lateral) */}
       <aside style={{ 
         width: '260px', 
-        backgroundColor: '#111827', 
+        backgroundColor: 'var(--accent-color)', 
         color: 'white',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '4px 0 10px rgba(0,0,0,0.1)'
       }}>
-        <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid #374151' }}>
-          <div style={{ width: '40px', height: '40px', backgroundColor: '#3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem', color: 'white' }}>
+        <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ width: '40px', height: '40px', backgroundColor: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--accent-color)' }}>
             A
           </div>
           <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>Admin Portal</h2>
@@ -352,17 +343,6 @@ const AdminDashboard = () => {
             Horarios del Sistema
           </button>
         </nav>
-
-        <div style={{ padding: '1rem', borderTop: '1px solid #374151' }}>
-          <button 
-            className="sidebar-btn logout"
-            onClick={handleLogout}
-            style={{ borderRadius: '6px' }}
-          >
-            <span style={{ fontSize: '1.2rem' }}>🚪</span>
-            Cerrar Sesión
-          </button>
-        </div>
       </aside>
 
       {/* Main Content (Área Principal) */}
