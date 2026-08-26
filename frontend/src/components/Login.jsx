@@ -7,13 +7,32 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email === 'prueba@empresa.com' && password === '12345') {
-      localStorage.setItem('isAuthenticated', 'true');
-      navigate('/formulario');
-    } else {
-      setError('Correo o contraseña incorrectos');
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify(data.data));
+        
+        if (data.data.requirePasswordChange) {
+          navigate('/change-password');
+        } else {
+          navigate('/formulario');
+        }
+      } else {
+        setError(data.message || 'Correo o contraseña incorrectos');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Error al conectar con el servidor.');
     }
   };
 
@@ -22,13 +41,13 @@ const Login = () => {
       <h2 className="form-title">Iniciar Sesión</h2>
       <form onSubmit={handleLogin}>
         <div className="form-group">
-          <label>Correo Electrónico</label>
+          <label>Usuario </label>
           <input 
-            type="email" 
+            type="text" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="form-control"
-            placeholder="ej. prueba@empresa.com"
+            placeholder="Ingrese su usuario asignado"
           />
         </div>
         <div className="form-group" style={{ marginTop: '1rem' }}>

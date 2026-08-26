@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ES_TERPEL_01",
+    "username": "9deoctubre0",
+    "password": "password123",
+    "nombre_estacion": "9 DE OCTUBRE/82AU09075/1260",
+    "comercializadora": "TERPEL"
+  },
+  {
+    "id": "ES_PRIMAX_01",
+    "username": "12denoviem1",
+    "password": "password123",
+    "nombre_estacion": "12 DE NOVIEMBRE/16AU09122/766",
+    "comercializadora": "PRIMAX"
+  },
+  {
+    "id": "ES_SERVIOIL_01",
+    "username": "8deseptiem2",
+    "password": "password123",
+    "nombre_estacion": "8 DE SEPTIEMBRE/95AU09009/498",
+    "comercializadora": "SERVIOIL"
+  }
+]

@@ -10,21 +10,33 @@ const PRODUCTOS_DISPONIBLES = [
   'Gasolina Pesca Artesanal'
 ];
 
-const MOCK_CENTROS = [
-  { id: 101, nombre: 'Centro Distribución Norte A' }, 
-  { id: 102, nombre: 'Centro Distribución Norte B' },
-  { id: 201, nombre: 'Centro Distribución Sur A' },
-  { id: 301, nombre: 'Centro Central Principal' }
-];
-
 const FormularioES = () => {
   const navigate = useNavigate();
 
-  // Verificar sesión al cargar
+  // Verificar sesión y obtener datos del usuario
+  const [userData, setUserData] = useState(null);
+  const [centros, setCentros] = useState([]);
+  const [loadingCentros, setLoadingCentros] = useState(false);
+
   useEffect(() => {
     const isAuth = localStorage.getItem('isAuthenticated');
     if (!isAuth) {
       navigate('/login');
+    } else {
+      const storedUser = localStorage.getItem('userData');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        
+        // Bloquear acceso al formulario si se requiere cambio de contraseña
+        if (parsedUser.requirePasswordChange) {
+          navigate('/change-password');
+          return;
+        }
+
+        setUserData(parsedUser);
+        // Actualizamos formData con el centro automáticamente
+        setFormData(prev => ({ ...prev, centroId: parsedUser.nombre_estacion }));
+      }
     }
   }, [navigate]);
 
@@ -44,12 +56,6 @@ const FormularioES = () => {
   const [tourKey, setTourKey] = useState(0);
 
   const tourSteps = [
-    {
-      target: '.step-centro',
-      content: 'Selecciona el centro desde donde estás reportando la operación.',
-      skipBeacon: true,
-      closeButtonAction: 'skip',
-    },
     {
       target: '.step-fecha',
       content: 'Ingresa la fecha de la operación (solo datos de hasta 10 días atrás).',
@@ -222,17 +228,16 @@ const FormularioES = () => {
       />
       
       <h2 className="form-title">Ingreso Diario de Operaciones</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="form-group step-centro">
-          <label>Centro de Distribución</label>
-          <select name="centroId" value={formData.centroId} onChange={handleChange} className="form-control">
-            <option value="">-- Seleccione un Centro --</option>
-            {MOCK_CENTROS.map(cen => (
-              <option key={cen.id} value={cen.id}>{cen.nombre}</option>
-            ))}
-          </select>
-          {errors.centroId && <span className="error-text">{errors.centroId}</span>}
+      
+      {userData && (
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#e9f2ff', borderRadius: '8px', border: '1px solid #b8d4ff' }}>
+          <h3 style={{ margin: 0, color: '#1f315c', fontSize: '1.1rem' }}>{userData.nombre_estacion}</h3>
+          <p style={{ margin: '5px 0 0 0', color: '#4a5568', fontSize: '0.9rem' }}>Comercializadora: <strong>{userData.comercializadora}</strong></p>
         </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        {/* El centro de distribución ya viene por la sesión (userData.nombre_estacion) */}
 
         <div className="form-group step-fecha">
           <label>Fecha y Hora</label>

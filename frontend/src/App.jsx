@@ -4,6 +4,7 @@ import Login from './components/Login'
 import Registro from './components/Registro'
 import FormularioES from './components/FormularioES'
 import ConfidencialidadModal from './components/ConfidencialidadModal'
+import ChangePassword from './components/ChangePassword'
 import logo from '../Images/Logo ARCH Jun 2026.png'
 
 const Header = () => {
@@ -23,7 +24,7 @@ const Header = () => {
         <h1 className="navbar-title">Sistema de Ingreso de Stock Diario</h1>
       </div>
       <div className="navbar-right">
-        {(location.pathname === '/formulario' && isAuthenticated) && (
+        {(location.pathname !== '/login' && isAuthenticated) && (
           <button onClick={handleLogout} className="btn-logout">Cerrar Sesión</button>
         )}
       </div>
@@ -55,6 +56,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
             <Route path="/formulario" element={<FormularioES />} />
+            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>

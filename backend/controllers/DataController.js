@@ -1,14 +1,19 @@
-import { getEstaciones, getCentrosDistribucion } from '../models/DataModel.js';
+import { getCentrosDistribucionOracle } from '../models/DataModel.js';
 
-export const getEstacionesHandler = (req, res) => {
-  const estaciones = getEstaciones();
-  res.json({ success: true, data: estaciones });
-};
+export const getCentrosHandler = async (req, res) => {
+  const { comercializadora } = req.query;
+  
+  if (!comercializadora) {
+    return res.status(400).json({ success: false, message: 'Se requiere la comercializadora.' });
+  }
 
-export const getCentrosHandler = (req, res) => {
-  const { estacionId } = req.params;
-  const centros = getCentrosDistribucion(parseInt(estacionId));
-  res.json({ success: true, data: centros });
+  try {
+    const centros = await getCentrosDistribucionOracle(comercializadora);
+    res.json({ success: true, data: centros });
+  } catch (error) {
+    console.error('Error obteniendo centros:', error);
+    res.status(500).json({ success: false, message: 'Error interno obteniendo los centros de distribución.' });
+  }
 };
 
 export const submitFormHandler = (req, res) => {
