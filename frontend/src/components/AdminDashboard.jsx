@@ -75,7 +75,7 @@ const AdminDashboard = () => {
     },
     {
       target: '.step-nav-auditores',
-      content: 'En esta nueva sección puedes asignar el rol de Auditor a una estación registrada de cada comercializadora.',
+      content: 'En esta sección puedes asignar el rol de Auditor a una estación registrada de cada comercializadora.',
       skipBeacon: true,
       closeButtonAction: 'skip',
     }
