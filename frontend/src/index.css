@@ -558,4 +558,28 @@ input[type="checkbox"] {
   .corp-modal-header { padding: 20px 20px 12px 20px; }
   .corp-modal-body { padding: 0 20px 20px 20px; }
   .corp-modal-footer { padding: 16px 20px; }
+  
+  /* Utilidades Generales de Responsividad */
+  .corp-responsive-layout {
+    flex-direction: column !important;
+  }
+  .corp-responsive-layout > aside {
+    width: 100% !important;
+    min-width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .corp-responsive-layout > main {
+    padding: 24px 16px !important;
+  }
+  .corp-responsive-pad {
+    padding: 16px !important;
+  }
+  .corp-stack-mobile {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .corp-stack-mobile > * {
+    width: 100% !important;
+  }
 }

@@ -179,7 +179,7 @@ const AdminDashboard = () => {
       ) : (
         <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
           <div className="corp-table-container">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                   {['Comercializadora', 'Usuario / Estación', 'Bloqueado Hasta', 'Acción'].map((h, i) => (
@@ -252,7 +252,7 @@ const AdminDashboard = () => {
       ) : (
         <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
           <div className="corp-table-container">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                   {['Fecha y Hora', 'Centro de Distribución', 'Correo Destinatario', 'Estado'].map((h, i) => (
@@ -287,7 +287,7 @@ const AdminDashboard = () => {
   // LAYOUT ROOT
   // ──────────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: 0, width: '100%' }}>
+    <div className="corp-responsive-layout" style={{ display: 'flex', flex: 1, minHeight: 0, width: '100%' }}>
       <style>{`
         @keyframes adminFadeIn {
           from { opacity: 0; transform: translateY(8px); }

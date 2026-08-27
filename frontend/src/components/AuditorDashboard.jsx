@@ -161,7 +161,7 @@ const AuditorDashboard = () => {
   }
 
   return (
-    <div className="corp-layout">
+    <div className="corp-layout corp-responsive-pad">
       <style>
         {`
           .corp-layout {
@@ -342,6 +342,12 @@ const AuditorDashboard = () => {
           }
           .corp-page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
           .corp-page-btn:hover:not(:disabled) { background-color: #f1f5f9; }
+
+          @media (max-width: 768px) {
+            .corp-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+            .corp-pagination { flex-direction: column; gap: 16px; align-items: flex-start; }
+            .corp-pagination-controls { flex-wrap: wrap; }
+          }
         `}
       </style>
 

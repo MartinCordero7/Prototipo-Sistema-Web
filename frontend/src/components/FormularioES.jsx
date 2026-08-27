@@ -396,7 +396,8 @@ const FormularioES = () => {
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            gap: '16px'
+            gap: '16px',
+            flexWrap: 'wrap'
           }}>
             <div>
               <h3 className="corp-h2" style={{ marginBottom: '4px' }}>{userData.nombre_estacion}</h3>
@@ -405,7 +406,7 @@ const FormularioES = () => {
               </p>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -470,7 +471,9 @@ const FormularioES = () => {
                     justifyContent: 'space-between',
                     padding: '12px 16px', 
                     backgroundColor: formData.productosSeleccionados.includes(prod) ? '#f8fafc' : '#ffffff',
-                    borderBottom: index < PRODUCTOS_DISPONIBLES.length - 1 ? '1px solid #e2e8f0' : 'none'
+                    borderBottom: index < PRODUCTOS_DISPONIBLES.length - 1 ? '1px solid #e2e8f0' : 'none',
+                    flexWrap: 'wrap',
+                    gap: '12px'
                   }}
                 >
                   <label className="corp-checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, fontWeight: formData.productosSeleccionados.includes(prod) ? '600' : '400', color: '#0f172a' }}>
@@ -488,7 +491,7 @@ const FormularioES = () => {
                   </label>
                   
                   {formData.productosSeleccionados.includes(prod) && (
-                    <div style={{ width: '160px' }}>
+                    <div style={{ width: '100%', maxWidth: '160px', minWidth: '120px' }}>
                       <input 
                         type="text"
                         placeholder="Stock (ej. 1500)"
