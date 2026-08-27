@@ -12,13 +12,23 @@ import {
   IconUnlock,
   IconClose,
   IconInbox,
-  IconInfo
+  IconInfo,
+  IconBuilding,
+  IconUser
 } from './Icons';
 
 const TABS = [
   { id: 'horarios', label: 'Horarios del Sistema', icon: <IconClock />, stepClass: 'step-nav-horarios' },
   { id: 'bloqueos', label: 'Cuentas Bloqueadas',   icon: <IconShield />, stepClass: 'step-nav-bloqueos' },
   { id: 'alertas',  label: 'Historial de Alertas', icon: <IconMail />, stepClass: 'step-nav-alertas' },
+  { id: 'auditores',label: 'Gestión de Auditores', icon: <IconBuilding />, stepClass: 'step-nav-auditores' },
+];
+
+const COMERCIALIZADORAS = [
+  'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
+  'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
+  'Masgas', 'Pdv Ecuador', 'Petroleos y servicios', 'Petrolrios', 
+  'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel', 'Test'
 ];
 
 const AdminDashboard = () => {
@@ -32,6 +42,12 @@ const AdminDashboard = () => {
   const [configSuccess, setConfigSuccess] = useState('');
   const [unlockTarget, setUnlockTarget]   = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Auditoria
+  const [comercializadoraAuditor, setComercializadoraAuditor] = useState('');
+  const [estacionesRegistradas, setEstacionesRegistradas] = useState([]);
+  const [loadingAuditores, setLoadingAuditores] = useState(false);
+
   const navigate = useNavigate();
 
   // Joyride state
@@ -54,6 +70,12 @@ const AdminDashboard = () => {
     {
       target: '.step-nav-alertas',
       content: 'Finalmente, aquí puedes monitorear los correos automáticos enviados a los infractores.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    },
+    {
+      target: '.step-nav-auditores',
+      content: 'En esta nueva sección puedes asignar el rol de Auditor a una estación registrada de cada comercializadora.',
       skipBeacon: true,
       closeButtonAction: 'skip',
     }
@@ -104,6 +126,53 @@ const AdminDashboard = () => {
       if (d.success) { setSuccessMessage(d.message); setUnlockTarget(null); fetchBlockedUsers(); }
       else { setError(d.message || 'Error.'); setUnlockTarget(null); }
     } catch (e) { setError('Error al conectar.'); setUnlockTarget(null); }
+  };
+
+  const fetchEstacionesRegistradas = async (comercializadora) => {
+    if (!comercializadora) {
+      setEstacionesRegistradas([]);
+      return;
+    }
+    try {
+      setLoadingAuditores(true);
+      setError('');
+      const r = await fetch(`http://localhost:3000/api/admin/estaciones-registradas?comercializadora=${comercializadora}`);
+      const d = await r.json();
+      if (d.success) setEstacionesRegistradas(d.data);
+      else setError(d.message || 'Error obteniendo estaciones.');
+    } catch (e) {
+      setError('Error de conexión al cargar estaciones.');
+    } finally {
+      setLoadingAuditores(false);
+    }
+  };
+
+  const handleComercializadoraChange = (e) => {
+    const val = e.target.value;
+    setComercializadoraAuditor(val);
+    fetchEstacionesRegistradas(val);
+  };
+
+  const handleDesignarAuditor = async (idUsuario) => {
+    try {
+      setLoadingAuditores(true);
+      const r = await fetch('http://localhost:3000/api/admin/asignar-auditor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idUsuario, comercializadora: comercializadoraAuditor })
+      });
+      const d = await r.json();
+      if (d.success) {
+        setSuccessMessage(d.message);
+        fetchEstacionesRegistradas(comercializadoraAuditor); // Refresh list
+      } else {
+        setError(d.message || 'Error al designar auditor.');
+      }
+    } catch (e) {
+      setError('Error al conectar con el servidor.');
+    } finally {
+      setLoadingAuditores(false);
+    }
   };
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -319,6 +388,113 @@ const AdminDashboard = () => {
   );
 
   // ──────────────────────────────────────────────────────────────────────────────
+  // RENDER: Gestión de Auditores
+  // ──────────────────────────────────────────────────────────────────────────────
+  const renderGestionesAuditores = () => (
+    <div style={{ animation: 'adminFadeIn 0.25s ease-out' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>Gestión de Auditores</h2>
+          <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+            Selecciona una comercializadora y designa qué estación de servicio actuará como auditora.
+          </p>
+        </div>
+      </div>
+
+      {error && activeTab === 'auditores' && (
+        <div className="corp-alert corp-alert-error" style={{ marginBottom: '24px' }}><IconWarn /> {error}</div>
+      )}
+
+      <div style={{ marginBottom: '24px', backgroundColor: 'white', padding: '24px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+        <label className="corp-label" style={{ display: 'block', marginBottom: '8px' }}>Filtrar por Comercializadora</label>
+        <select 
+          className="corp-select" 
+          value={comercializadoraAuditor} 
+          onChange={handleComercializadoraChange}
+          style={{ maxWidth: '400px' }}
+        >
+          <option value="">-- Seleccione Comercializadora --</option>
+          {COMERCIALIZADORAS.map(c => (
+            <option key={c} value={c.toUpperCase()}>{c.toUpperCase()}</option>
+          ))}
+        </select>
+      </div>
+
+      {!comercializadoraAuditor ? (
+        <div style={{ textAlign: 'center', padding: '60px 40px', backgroundColor: 'white', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}><IconBuilding /></div>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>Seleccione una red</h3>
+          <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
+            Elija una comercializadora para ver sus estaciones registradas.
+          </p>
+        </div>
+      ) : loadingAuditores ? (
+        <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '80px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          Cargando estaciones registradas...
+        </div>
+      ) : estacionesRegistradas.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 40px', backgroundColor: 'white', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
+            No hay estaciones registradas aún para esta comercializadora.
+          </p>
+        </div>
+      ) : (
+        <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div className="corp-table-container">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Estación de Servicio</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Usuario Asignado</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'center', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Rol</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'right', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {estacionesRegistradas.map((estacion) => (
+                  <tr key={estacion.id} style={{ borderBottom: '1px solid #f1f5f9' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '16px 24px' }}>
+                      <div style={{ fontWeight: '600', color: '#0f172a' }}>{estacion.nombre_estacion}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{estacion.correo}</div>
+                    </td>
+                    <td style={{ padding: '16px 24px', color: '#64748b' }}>{estacion.username}</td>
+                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                      {estacion.es_auditor === 1 ? (
+                        <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '600', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <IconCheck /> AUDITOR
+                        </span>
+                      ) : (
+                        <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '500', backgroundColor: '#f1f5f9', color: '#64748b' }}>
+                          Estándar
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                      {estacion.es_auditor === 1 ? (
+                        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>Designado</span>
+                      ) : (
+                        <button 
+                          onClick={() => handleDesignarAuditor(estacion.id)}
+                          className="corp-btn corp-btn-outline"
+                          style={{ padding: '6px 14px', fontSize: '12px', width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <IconUser /> Designar Auditor
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────────
   // LAYOUT ROOT
   // ──────────────────────────────────────────────────────────────────────────────
   return (
@@ -411,6 +587,7 @@ const AdminDashboard = () => {
         {activeTab === 'horarios' && renderScheduleConfig()}
         {activeTab === 'bloqueos' && renderBlockedUsers()}
         {activeTab === 'alertas'  && renderAlertasHistory()}
+        {activeTab === 'auditores' && renderGestionesAuditores()}
 
         {/* Modal: Confirmar Desbloqueo */}
         {unlockTarget && (

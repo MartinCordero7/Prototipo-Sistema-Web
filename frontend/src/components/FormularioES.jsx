@@ -401,7 +401,7 @@ const FormularioES = () => {
               border: `1px solid ${isClosed ? '#fecaca' : '#bbf7d0'}`
             }}>
               {isClosed ? <IconLock /> : <IconClock />}
-              {isClosed ? 'Sistema Cerrado' : `Tiempo restante: ${timeLeft}`}
+              {isClosed ? 'Sistema Cerrado' : `La plataforma de ingreso se cerrara en: ${timeLeft}`}
             </div>
           </div>
         </div>

@@ -39,7 +39,7 @@ export const getEstadoDiario = async (req, res) => {
     // 2. Obtener los registros reales desde SQLite para el rango solicitado
     const authDb = await getAuthDb();
     const declaradosRango = await authDb.all(
-      "SELECT nombre_centro, marca_temporal, fecha_stock FROM stock_diario WHERE fecha_stock >= ? AND fecha_stock <= ?",
+      "SELECT nombre_centro, marca_temporal, fecha_stock, diesel_premium, gasolina_extra, gasolina_extra_etanol, gasolina_super, gasolina_pesca_artesanal FROM stock_diario WHERE fecha_stock >= ? AND fecha_stock <= ?",
       [`${targetDesde}T00:00`, `${targetHasta}T23:59`]
     );
 
@@ -50,21 +50,28 @@ export const getEstadoDiario = async (req, res) => {
       if (!mapaDeclaraciones[dec.nombre_centro]) {
         mapaDeclaraciones[dec.nombre_centro] = {};
       }
-      mapaDeclaraciones[dec.nombre_centro][datePart] = dec.marca_temporal;
+      mapaDeclaraciones[dec.nombre_centro][datePart] = dec;
     }
 
     // 3. Cruzar datos (Centros x Fechas)
     const reporte = [];
     for (const date of dates) {
       for (const centro of centrosOracle) {
-        const marcaTemporal = mapaDeclaraciones[centro.dato_concatenado]?.[date];
-        const completado = !!marcaTemporal;
+        const declaracion = mapaDeclaraciones[centro.dato_concatenado]?.[date];
+        const completado = !!declaracion;
         
         reporte.push({
           ...centro,
           fecha_objetivo: date, // Nuevo campo
           estado: completado ? 'COMPLETADO' : 'PENDIENTE',
-          hora_registro: completado ? new Date(marcaTemporal).toISOString() : null
+          hora_registro: completado ? new Date(declaracion.marca_temporal).toISOString() : null,
+          stocks: completado ? {
+            diesel_premium: declaracion.diesel_premium,
+            gasolina_extra: declaracion.gasolina_extra,
+            gasolina_extra_etanol: declaracion.gasolina_extra_etanol,
+            gasolina_super: declaracion.gasolina_super,
+            gasolina_pesca_artesanal: declaracion.gasolina_pesca_artesanal
+          } : null
         });
       }
     }

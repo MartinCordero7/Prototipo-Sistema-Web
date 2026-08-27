@@ -79,7 +79,7 @@ const Login = () => {
           navigate('/change-password');
         } else if (data.data.comercializadora === 'ADMINISTRADOR') {
           navigate('/admin-dashboard');
-        } else if (data.data.nombre_estacion === 'AUDITORIA') {
+        } else if (data.data.es_auditor === 1 || data.data.nombre_estacion === 'AUDITORIA') {
           navigate('/auditor-dashboard');
         } else {
           navigate('/formulario');

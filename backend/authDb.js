@@ -93,6 +93,12 @@ export const getAuthDb = async () => {
     // Ya existe
   }
 
+  try {
+    await db.exec(`ALTER TABLE usuarios ADD COLUMN es_auditor INTEGER DEFAULT 0;`);
+  } catch (error) {
+    // Ya existe
+  }
+
   const adminHash = bcrypt.hashSync('admin123', 10);
   // Insertar usuario administrador si no existe
   await db.run(`
@@ -123,10 +129,13 @@ export const getAuthDb = async () => {
     const username = `auditor_${org.toLowerCase().replace(/ /g, '_')}`;
     const id = `aud_${org.replace(/ /g, '')}`;
     await db.run(`
-      INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
-      VALUES (?, ?, ?, ?, ?, 0, NULL, 1)
+      INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente, es_auditor)
+      VALUES (?, ?, ?, ?, ?, 0, NULL, 1, 1)
     `, [id, username, auditorHash, 'AUDITORIA', org.toUpperCase()]);
   }
+
+  // Asegurar que los auditores existentes tengan el flag
+  await db.run(`UPDATE usuarios SET es_auditor = 1 WHERE nombre_estacion = 'AUDITORIA'`);
 
   dbInstance = db;
   return dbInstance;

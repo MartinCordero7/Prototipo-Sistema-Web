@@ -94,3 +94,58 @@ export const getAlertasHistory = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
 };
+
+export const getEstacionesRegistradas = async (req, res) => {
+  const { comercializadora } = req.query;
+  if (!comercializadora) {
+    return res.status(400).json({ success: false, message: 'Se requiere la comercializadora.' });
+  }
+
+  try {
+    const authDb = await getAuthDb();
+    // Obtener estaciones reales registradas, excluyendo al mock de auditoría original o admin
+    const estaciones = await authDb.all(
+      `SELECT id, username, nombre_estacion, comercializadora, correo, es_auditor 
+       FROM usuarios 
+       WHERE comercializadora = ? AND nombre_estacion != 'AUDITORIA' AND comercializadora != 'ADMINISTRADOR'`,
+      [comercializadora]
+    );
+    
+    return res.json({ success: true, data: estaciones });
+  } catch (error) {
+    console.error('Error obteniendo estaciones registradas:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};
+
+export const asignarAuditor = async (req, res) => {
+  const { idUsuario, comercializadora } = req.body;
+  if (!idUsuario || !comercializadora) {
+    return res.status(400).json({ success: false, message: 'Faltan datos requeridos (idUsuario, comercializadora).' });
+  }
+
+  try {
+    const authDb = await getAuthDb();
+    
+    // Primero, quitar el rol a todas las estaciones de esta comercializadora
+    await authDb.run(
+      'UPDATE usuarios SET es_auditor = 0 WHERE comercializadora = ?',
+      [comercializadora]
+    );
+
+    // Segundo, asignar el rol a la estacion seleccionada
+    const result = await authDb.run(
+      'UPDATE usuarios SET es_auditor = 1 WHERE id = ?',
+      [idUsuario]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+    }
+
+    return res.json({ success: true, message: 'Auditor asignado correctamente.' });
+  } catch (error) {
+    console.error('Error asignando auditor:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};

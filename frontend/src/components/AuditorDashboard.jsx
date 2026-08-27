@@ -26,6 +26,9 @@ const AuditorDashboard = () => {
   const [comercializadora, setComercializadora] = useState('');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   
+  // Stock modal state
+  const [selectedStockStation, setSelectedStockStation] = useState(null);
+  
   // Estados de Filtro y Búsqueda
   const tzoffset = (new Date()).getTimezoneOffset() * 60000;
   const localISODate = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
@@ -125,9 +128,9 @@ const AuditorDashboard = () => {
       const matchEstado = estadoFiltro === 'TODOS' || est.estado === estadoFiltro;
       const term = searchTerm.toLowerCase();
       const matchSearch = 
-        est.nombre.toLowerCase().includes(term) ||
-        est.codigo_arch.toLowerCase().includes(term) ||
-        est.codigo_unico.toLowerCase().includes(term);
+        String(est.nombre || '').toLowerCase().includes(term) ||
+        String(est.codigo_arch || '').toLowerCase().includes(term) ||
+        String(est.codigo_unico || '').toLowerCase().includes(term);
       return matchEstado && matchSearch;
     });
   }, [estaciones, estadoFiltro, searchTerm]);
@@ -550,6 +553,11 @@ const AuditorDashboard = () => {
                     {sortConfig.key === 'hora_registro' && (sortConfig.direction === 'asc' ? <IconChevronUp /> : <IconChevronDown />)}
                   </div>
                 </th>
+                <th style={{ textAlign: 'center' }}>
+                  <div className="th-content" style={{ justifyContent: 'center' }}>
+                    Acción
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -575,6 +583,15 @@ const AuditorDashboard = () => {
                     </td>
                     <td style={{ color: estacion.hora_registro ? '#1e293b' : '#94a3b8' }}>
                       {estacion.hora_registro ? new Date(estacion.hora_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button 
+                        className="corp-btn corp-btn-outline" 
+                        style={{ padding: '6px 12px', fontSize: '12px', width: 'auto' }}
+                        onClick={() => setSelectedStockStation(estacion)}
+                      >
+                        <IconSearch /> Ver Stock
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -643,6 +660,62 @@ const AuditorDashboard = () => {
       >
         <IconInfo /> ¿Necesitas ayuda?
       </button>
+
+      {/* Modal de Stock */}
+      {selectedStockStation && (
+        <div className="corp-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001 }}>
+          <div className="corp-modal-card" style={{ backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '500px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>Stock Declarado</h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+                  {selectedStockStation.nombre} ({selectedStockStation.fecha_objetivo})
+                </p>
+              </div>
+              <button onClick={() => setSelectedStockStation(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              {selectedStockStation.estado === 'PENDIENTE' ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
+                  <IconInfo />
+                  <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>Esta estación aún no ha registrado stock para esta fecha.</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '24px', fontWeight: '700', color: '#cbd5e1' }}>0</p>
+                </div>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { key: 'diesel_premium', label: 'Diésel Premium', color: '#0f172a' },
+                    { key: 'gasolina_extra', label: 'Gasolina Extra', color: '#16a34a' },
+                    { key: 'gasolina_extra_etanol', label: 'Gasolina Extra con Etanol', color: '#b91c1c' },
+                    { key: 'gasolina_super', label: 'Gasolina Súper', color: '#0284c7' },
+                    { key: 'gasolina_pesca_artesanal', label: 'Gasolina Pesca Artesanal', color: '#d97706' }
+                  ].filter(prod => selectedStockStation.stocks?.[prod.key] > 0).map(prod => (
+                    <li key={prod.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '8px', borderLeft: `4px solid ${prod.color}` }}>
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>{prod.label}</span>
+                      <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{selectedStockStation.stocks[prod.key].toLocaleString()} gal</span>
+                    </li>
+                  ))}
+                  
+                  {Object.values(selectedStockStation.stocks || {}).every(val => val === 0) && (
+                    <div style={{ textAlign: 'center', padding: '20px 0', color: '#64748b' }}>
+                      <p style={{ margin: 0, fontSize: '14px' }}>Se reportó un stock de 0 para todos los productos.</p>
+                    </div>
+                  )}
+                </ul>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '16px', textAlign: 'right' }}>
+              <button onClick={() => setSelectedStockStation(null)} className="corp-btn corp-btn-primary" style={{ width: 'auto' }}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -176,7 +176,7 @@ const Registro = () => {
             >
               <option value="">Seleccione una comercializadora...</option>
               {COMERCIALIZADORAS.map(c => (
-                <option key={c} value={c.toUpperCase()}>{c}</option>
+                <option key={c} value={c.toUpperCase()}>{c.toUpperCase()}</option>
               ))}
             </select>
           </div>
@@ -196,7 +196,7 @@ const Registro = () => {
               </option>
               {centrosDisponibles.map(centro => (
                 <option key={centro.id} value={centro.id}>
-                  {centro.nombre}
+                  {centro.nombre.toUpperCase()}
                 </option>
               ))}
             </select>
@@ -294,6 +294,8 @@ const Registro = () => {
               <div className="corp-modal-body">
                 <p style={{ margin: 0 }}>
                   Acepta que el correo ingresado será el único al que se enviará notificaciones, avisos y alertas del sistema.
+                  <br /><br />
+                  <strong style={{ color: '#b91c1c' }}>IMPORTANTE:</strong> El correo debe corresponder al centro de distribución, NO AL GENÉRICO DE LA COMERCIALIZADORA.
                 </p>
               </div>
               <div className="corp-modal-footer">
