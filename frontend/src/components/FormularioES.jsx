@@ -99,7 +99,7 @@ const FormularioES = () => {
         const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
         
-        setTimeLeft(`${diffHrs.toString().padStart(2, '0')}:${diffMins.toString().padStart(2, '0')}:${diffSecs.toString().padStart(2, '0')}`);
+        setTimeLeft(`${diffHrs}h ${diffMins}m ${diffSecs}s`);
       }
     }, 1000);
     
@@ -273,7 +273,7 @@ const FormularioES = () => {
           
           // Limpiar el formulario
           setFormData({
-            centroId: '',
+            centroId: userData.nombre_estacion,
             fecha: '',
             productosSeleccionados: [],
             stocks: {},
@@ -382,9 +382,28 @@ const FormularioES = () => {
           }}
         />
         
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <h2 className="corp-h1">Ingreso Diario de Operaciones</h2>
-          <p className="corp-body">Registro oficial de stock</p>
+          <p className="corp-body" style={{ marginBottom: '16px' }}>Registro oficial de stock</p>
+          
+          {/* Timer at the top */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 24px',
+              borderRadius: '9999px',
+              backgroundColor: isClosed ? '#fee2e2' : '#f0fdf4',
+              color: isClosed ? '#b91c1c' : '#166534',
+              fontWeight: '700',
+              fontSize: '15px',
+              border: `1px solid ${isClosed ? '#fecaca' : '#bbf7d0'}`
+            }}>
+              {isClosed ? <IconLock /> : <IconClock />}
+              {isClosed ? 'Sistema Cerrado' : `Tiempo restante: ${timeLeft}`}
+            </div>
+          </div>
         </div>
         
         {userData && (
@@ -407,21 +426,6 @@ const FormularioES = () => {
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                backgroundColor: isClosed ? '#fee2e2' : '#f0fdf4',
-                color: isClosed ? '#b91c1c' : '#166534',
-                fontWeight: '600',
-                border: `1px solid ${isClosed ? '#fecaca' : '#bbf7d0'}`
-              }}>
-                {isClosed ? <IconLock /> : <IconClock />}
-                {isClosed ? 'Sistema Cerrado' : `Cierre en: ${timeLeft}`}
-              </div>
-
               <button 
                 onClick={() => setShowConfigModal(true)}
                 className="corp-btn corp-btn-outline"

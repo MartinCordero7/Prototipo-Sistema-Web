@@ -37,10 +37,12 @@ export const submitFormHandler = async (req, res) => {
     const pad = (n) => n.toString().padStart(2, '0');
     const marcaTemporal = `${ecuadorTime.getFullYear()}-${pad(ecuadorTime.getMonth() + 1)}-${pad(ecuadorTime.getDate())} ${pad(ecuadorTime.getHours())}:${pad(ecuadorTime.getMinutes())}:${pad(ecuadorTime.getSeconds())}`;
 
+    const targetDate = formData.fecha.split('T')[0];
+
     // Validar si ya existe un registro para ese usuario en esa fecha
     const existingStock = await authDb.get(
-      'SELECT id FROM stock_diario WHERE correo_usuario = ? AND fecha_stock = ?',
-      [formData.correoUsuario, formData.fecha]
+      'SELECT id FROM stock_diario WHERE correo_usuario = ? AND fecha_stock LIKE ?',
+      [formData.correoUsuario, `${targetDate}%`]
     );
 
     if (existingStock) {
