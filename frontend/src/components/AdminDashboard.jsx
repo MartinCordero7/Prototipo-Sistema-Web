@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Joyride, STATUS } from 'react-joyride';
 
 import {
   IconShield,
@@ -10,13 +11,14 @@ import {
   IconWarn,
   IconUnlock,
   IconClose,
-  IconInbox
+  IconInbox,
+  IconInfo
 } from './Icons';
 
 const TABS = [
-  { id: 'horarios', label: 'Horarios del Sistema', icon: <IconClock /> },
-  { id: 'bloqueos', label: 'Cuentas Bloqueadas',   icon: <IconShield /> },
-  { id: 'alertas',  label: 'Historial de Alertas', icon: <IconMail /> },
+  { id: 'horarios', label: 'Horarios del Sistema', icon: <IconClock />, stepClass: 'step-nav-horarios' },
+  { id: 'bloqueos', label: 'Cuentas Bloqueadas',   icon: <IconShield />, stepClass: 'step-nav-bloqueos' },
+  { id: 'alertas',  label: 'Historial de Alertas', icon: <IconMail />, stepClass: 'step-nav-alertas' },
 ];
 
 const AdminDashboard = () => {
@@ -31,6 +33,39 @@ const AdminDashboard = () => {
   const [unlockTarget, setUnlockTarget]   = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
+
+  // Joyride state
+  const [runTour, setRunTour] = useState(false);
+  const [tourKey, setTourKey] = useState(0);
+
+  const tourSteps = [
+    {
+      target: '.step-nav-horarios',
+      content: 'En esta sección podrás configurar la hora máxima en la que las estaciones pueden enviar reportes.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    },
+    {
+      target: '.step-nav-bloqueos',
+      content: 'Aquí verás y podrás desbloquear las estaciones que hayan superado los intentos de acceso fallidos.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    },
+    {
+      target: '.step-nav-alertas',
+      content: 'Finalmente, aquí puedes monitorear los correos automáticos enviados a los infractores.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    }
+  ];
+
+  const handleJoyrideCallback = (data) => {
+    const { status } = data;
+    const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+    }
+  };
 
   useEffect(() => {
     const isAuth = localStorage.getItem('isAuthenticated');
@@ -288,6 +323,17 @@ const AdminDashboard = () => {
   // ──────────────────────────────────────────────────────────────────────────────
   return (
     <div className="corp-responsive-layout" style={{ display: 'flex', flex: 1, minHeight: 0, width: '100%' }}>
+      <Joyride 
+        key={tourKey}
+        steps={tourSteps}
+        run={runTour}
+        continuous={true}
+        showProgress={true}
+        showSkipButton={true}
+        callback={handleJoyrideCallback}
+        locale={{ back: 'Atrás', close: 'Cerrar', last: 'Terminar', next: 'Siguiente', skip: 'Saltar' }}
+        styles={{ options: { primaryColor: '#0f172a', zIndex: 10000 } }}
+      />
       <style>{`
         @keyframes adminFadeIn {
           from { opacity: 0; transform: translateY(8px); }
@@ -353,7 +399,7 @@ const AdminDashboard = () => {
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
           {TABS.map(tab => (
-            <button key={tab.id} className={`adm-nav-btn ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+            <button key={tab.id} className={`adm-nav-btn ${tab.stepClass} ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -402,6 +448,22 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* BOTÓN FLOTANTE DE AYUDA */}
+        <button 
+          onClick={() => {
+            setTourKey(prev => prev + 1);
+            setRunTour(true);
+          }}
+          style={{
+            position: 'fixed', bottom: '32px', right: '32px', backgroundColor: '#0f172a', color: 'white',
+            border: 'none', borderRadius: '9999px', padding: '12px 24px', fontSize: '14px', fontWeight: '600',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center',
+            gap: '8px', zIndex: 999
+          }}
+        >
+          <IconInfo /> ¿Necesitas ayuda?
+        </button>
       </main>
     </div>
   );

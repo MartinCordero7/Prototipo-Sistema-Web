@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Joyride, STATUS } from 'react-joyride';
 
 // --- Iconos SVG (Monocromáticos, Línea pura) ---
 import {
@@ -10,7 +11,8 @@ import {
   IconSearch,
   IconDownload,
   IconChevronUp,
-  IconChevronDown
+  IconChevronDown,
+  IconInfo
 } from './Icons';
 
 const AuditorDashboard = () => {
@@ -36,6 +38,45 @@ const AuditorDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'asc' });
+
+  // Joyride state
+  const [runTour, setRunTour] = useState(false);
+  const [tourKey, setTourKey] = useState(0);
+
+  const tourSteps = [
+    {
+      target: '.corp-kpi-container',
+      content: 'Estas tarjetas resumen el estado general de las estaciones a tu cargo para el día de hoy.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    },
+    {
+      target: '.corp-filters',
+      content: 'Utiliza esta barra para filtrar resultados por nombre, código de estación o rango de fechas.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    },
+    {
+      target: '.corp-btn-export',
+      content: 'Cuando hayas filtrado los datos, haz clic aquí para descargar un reporte detallado en Excel (.csv).',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    },
+    {
+      target: '.corp-table-container',
+      content: 'Aquí puedes ver el desglose de cada estación. Haz clic en los títulos de las columnas para ordenarlos.',
+      skipBeacon: true,
+      closeButtonAction: 'skip',
+    }
+  ];
+
+  const handleJoyrideCallback = (data) => {
+    const { status } = data;
+    const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+    }
+  };
 
   useEffect(() => {
     const isAuth = localStorage.getItem('isAuthenticated');
@@ -162,6 +203,17 @@ const AuditorDashboard = () => {
 
   return (
     <div className="corp-layout corp-responsive-pad">
+      <Joyride 
+        key={tourKey}
+        steps={tourSteps}
+        run={runTour}
+        continuous={true}
+        showProgress={true}
+        showSkipButton={true}
+        callback={handleJoyrideCallback}
+        locale={{ back: 'Atrás', close: 'Cerrar', last: 'Terminar', next: 'Siguiente', skip: 'Saltar' }}
+        styles={{ options: { primaryColor: '#0f172a', zIndex: 10000 } }}
+      />
       <style>
         {`
           .corp-layout {
@@ -575,6 +627,22 @@ const AuditorDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* BOTÓN FLOTANTE DE AYUDA */}
+      <button 
+        onClick={() => {
+          setTourKey(prev => prev + 1);
+          setRunTour(true);
+        }}
+        style={{
+          position: 'fixed', bottom: '32px', right: '32px', backgroundColor: '#0f172a', color: 'white',
+          border: 'none', borderRadius: '9999px', padding: '12px 24px', fontSize: '14px', fontWeight: '600',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center',
+          gap: '8px', zIndex: 999
+        }}
+      >
+        <IconInfo /> ¿Necesitas ayuda?
+      </button>
     </div>
   );
 };
