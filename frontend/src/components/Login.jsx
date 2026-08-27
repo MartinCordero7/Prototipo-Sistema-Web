@@ -46,7 +46,7 @@ const Login = () => {
     },
     {
       target: '.step-register',
-      content: '¡IMPORTANTE! Si es la primera vez que ingresas al sistema, es obligatorio registrarte primero usando tu código ARCH.',
+      content: '¡IMPORTANTE! Si es la primera vez que ingresas al sistema, es obligatorio registrarte.',
       skipBeacon: true,
       closeButtonAction: 'skip',
     }
