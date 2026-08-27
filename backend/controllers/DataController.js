@@ -53,16 +53,26 @@ export const submitFormHandler = async (req, res) => {
     // Extraer cantidades por producto
     const getStock = (nombreProd) => {
       if (formData.productosSeleccionados.includes(nombreProd) && formData.stocks[nombreProd]) {
-        return parseInt(formData.stocks[nombreProd], 10);
+        const val = parseInt(formData.stocks[nombreProd], 10);
+        if (val < 0 || val > 50000) {
+          throw new Error(`El valor del stock para ${nombreProd} debe estar entre 0 y 50,000.`);
+        }
+        return val;
       }
       return 0;
     };
 
-    const dieselPremium = getStock('Diésel Premium');
-    const gasolinaExtra = getStock('Gasolina Extra');
-    const gasolinaExtraEtanol = getStock('Gasolina Extra con Etanol');
-    const gasolinaSuper = getStock('Gasolina Súper');
-    const gasolinaPesca = getStock('Gasolina Pesca Artesanal');
+    let dieselPremium, gasolinaExtra, gasolinaExtraEtanol, gasolinaSuper, gasolinaPesca;
+    
+    try {
+      dieselPremium = getStock('Diésel Premium');
+      gasolinaExtra = getStock('Gasolina Extra');
+      gasolinaExtraEtanol = getStock('Gasolina Extra con Etanol');
+      gasolinaSuper = getStock('Gasolina Súper');
+      gasolinaPesca = getStock('Gasolina Pesca Artesanal');
+    } catch (validationError) {
+      return res.status(400).json({ success: false, message: validationError.message });
+    }
 
     await authDb.run(`
       INSERT INTO stock_diario (

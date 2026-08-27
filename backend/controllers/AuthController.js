@@ -1,5 +1,12 @@
 import { getAuthDb } from '../authDb.js';
 import { enviarCredenciales } from '../services/emailService.js';
+import bcrypt from 'bcryptjs';
+
+// Helper function para validar contraseña segura
+const isStrongPassword = (pwd) => {
+  const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]).{8,}$/;
+  return regex.test(pwd);
+};
 
 export const loginHandler = async (req, res) => {
   const { username, password } = req.body;
@@ -43,7 +50,9 @@ export const loginHandler = async (req, res) => {
     }
 
     // 4. Validar la contraseña
-    if (user.password !== password) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    
+    if (!passwordMatch) {
       const intentosActuales = (user.intentos_fallidos || 0) + 1;
       
       if (intentosActuales >= 3) {
@@ -104,12 +113,20 @@ export const changePasswordHandler = async (req, res) => {
     
     // Validar contraseña antigua
     const user = await authDb.get(
-      'SELECT * FROM usuarios WHERE username = ? AND password = ?',
-      [username, oldPassword]
+      'SELECT * FROM usuarios WHERE username = ?',
+      [username]
     );
 
-    if (!user) {
+    if (!user || !(await bcrypt.compare(oldPassword, user.password))) {
       return res.status(401).json({ success: false, message: 'Contraseña actual incorrecta.' });
+    }
+
+    // Exigir contraseña segura
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'La nueva contraseña debe tener al menos 8 caracteres, incluir una mayúscula, un número y un signo especial.' 
+      });
     }
 
     // MODO DEMO: Si el usuario es "test_user", simulamos éxito sin modificar la BD
@@ -118,9 +135,10 @@ export const changePasswordHandler = async (req, res) => {
     }
 
     // Actualizar contraseña y quitar la bandera de pendiente para usuarios reales
+    const newHash = await bcrypt.hash(newPassword, 10);
     await authDb.run(
       'UPDATE usuarios SET password = ?, cambio_clave_pendiente = 0 WHERE username = ?',
-      [newPassword, username]
+      [newHash, username]
     );
 
     return res.json({ success: true, message: 'Contraseña actualizada exitosamente.' });
@@ -149,14 +167,15 @@ export const registerHandler = async (req, res) => {
     }
 
     // Generate temporal password
-    const tempPassword = Math.random().toString(36).slice(-8);
+    const tempPassword = Math.random().toString(36).slice(-8) + "A1!"; // Asegurar que cumple reglas base temporalmente
+    const tempHash = await bcrypt.hash(tempPassword, 10);
 
     const newId = `ES_${codigoArch}_${Date.now()}`;
     const concatName = `${nombreCentro}/${codigoArch}/${codigoUnico}`;
     await authDb.run(`
       INSERT INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, correo, cambio_clave_pendiente)
       VALUES (?, ?, ?, ?, ?, 0, NULL, ?, 1)
-    `, [newId, generatedUsername, tempPassword, concatName, comercializadora, correo]);
+    `, [newId, generatedUsername, tempHash, concatName, comercializadora, correo]);
 
     // Enviar correo con las credenciales usando Carbonio (SMTP)
     await enviarCredenciales(correo, generatedUsername, tempPassword, nombreCentro);
@@ -194,11 +213,11 @@ export const updateProfileHandler = async (req, res) => {
     
     // Validar contraseña actual
     const user = await authDb.get(
-      'SELECT * FROM usuarios WHERE username = ? AND password = ?',
-      [username, currentPassword]
+      'SELECT * FROM usuarios WHERE username = ?',
+      [username]
     );
 
-    if (!user) {
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(401).json({ success: false, message: 'Contraseña actual incorrecta.' });
     }
 
@@ -209,15 +228,25 @@ export const updateProfileHandler = async (req, res) => {
     let updateQuery = '';
     let params = [];
 
-    if (newEmail && newPassword) {
-      updateQuery = 'UPDATE usuarios SET correo = ?, password = ? WHERE username = ?';
-      params = [newEmail, newPassword, username];
+    if (newPassword) {
+      if (!isStrongPassword(newPassword)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'La nueva contraseña debe tener al menos 8 caracteres, incluir una mayúscula, un número y un signo especial.' 
+        });
+      }
+      const newHash = await bcrypt.hash(newPassword, 10);
+      
+      if (newEmail) {
+        updateQuery = 'UPDATE usuarios SET correo = ?, password = ? WHERE username = ?';
+        params = [newEmail, newHash, username];
+      } else {
+        updateQuery = 'UPDATE usuarios SET password = ? WHERE username = ?';
+        params = [newHash, username];
+      }
     } else if (newEmail) {
       updateQuery = 'UPDATE usuarios SET correo = ? WHERE username = ?';
       params = [newEmail, username];
-    } else if (newPassword) {
-      updateQuery = 'UPDATE usuarios SET password = ? WHERE username = ?';
-      params = [newPassword, username];
     }
 
     await authDb.run(updateQuery, params);

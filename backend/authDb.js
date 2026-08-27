@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,21 +93,23 @@ export const getAuthDb = async () => {
     // Ya existe
   }
 
+  const adminHash = bcrypt.hashSync('admin123', 10);
   // Insertar usuario administrador si no existe
   await db.run(`
     INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
-    VALUES ('admin_id', 'admin_arch', 'admin123', 'ADMINISTRADOR SISTEMA', 'ADMINISTRADOR', 0, NULL, 0)
-  `);
+    VALUES ('admin_id', 'admin_arch', ?, 'ADMINISTRADOR SISTEMA', 'ADMINISTRADOR', 0, NULL, 0)
+  `, [adminHash]);
 
   await db.run(`
     UPDATE usuarios SET cambio_clave_pendiente = 0 WHERE username = 'admin_arch'
   `);
 
+  const testHash = bcrypt.hashSync('password123', 10);
   // Insertar usuario de prueba
   await db.run(`
     INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
-    VALUES ('test_id', 'test_user', 'password123', 'ESTACION DE PRUEBA', 'TERPEL', 0, NULL, 1)
-  `);
+    VALUES ('test_id', 'test_user', ?, 'ESTACION DE PRUEBA', 'TERPEL', 0, NULL, 1)
+  `, [testHash]);
 
   const COMERCIALIZADORAS = [
     'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
@@ -115,13 +118,14 @@ export const getAuthDb = async () => {
     'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel'
   ];
 
+  const auditorHash = bcrypt.hashSync('auditor123', 10);
   for (const org of COMERCIALIZADORAS) {
     const username = `auditor_${org.toLowerCase().replace(/ /g, '_')}`;
     const id = `aud_${org.replace(/ /g, '')}`;
     await db.run(`
       INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
       VALUES (?, ?, ?, ?, ?, 0, NULL, 1)
-    `, [id, username, 'auditor123', 'AUDITORIA', org.toUpperCase()]);
+    `, [id, username, auditorHash, 'AUDITORIA', org.toUpperCase()]);
   }
 
   dbInstance = db;

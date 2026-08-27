@@ -9,7 +9,8 @@ import {
   IconAlertTriangle,
   IconInfo,
   IconX,
-  IconLock
+  IconLock,
+  IconClock
 } from './Icons';
 
 const PRODUCTOS_DISPONIBLES = [
@@ -395,7 +396,6 @@ const FormularioES = () => {
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            flexWrap: 'wrap',
             gap: '16px'
           }}>
             <div>
@@ -442,10 +442,11 @@ const FormularioES = () => {
         <form onSubmit={handleSubmit}>
           
           <div className="corp-form-group step-fecha">
-            <label className="corp-label">Fecha y Hora de la Declaración</label>
+            <label htmlFor="fecha" className="corp-label">Fecha y Hora de la Declaración</label>
             <input 
               type="datetime-local" 
-              name="fecha"
+              name="fecha" 
+              id="fecha"
               value={formData.fecha}
               onChange={handleChange}
               className="corp-input"
@@ -521,7 +522,7 @@ const FormularioES = () => {
               disabled={isClosed}
             />
             <label htmlFor="aceptaRealidad" className="corp-checkbox-label" style={{ fontWeight: '500', color: '#1e293b' }}>
-              Declaro bajo juramento que los valores de stock registrados corresponden a la realidad operativa del centro de distribución.
+              Acepta que los valores registrados corresponden a la realidad operativa del centro de distribución.
             </label>
           </div>
           {errors.aceptaRealidad && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>{errors.aceptaRealidad}</span>}
