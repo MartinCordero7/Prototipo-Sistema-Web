@@ -2,48 +2,76 @@ import { getCentrosDistribucionOracle } from '../models/DataModel.js';
 import { getAuthDb } from '../authDb.js';
 
 export const getEstadoDiario = async (req, res) => {
-  const { comercializadora, fecha } = req.query;
+  const { comercializadora, fechaDesde, fechaHasta } = req.query;
 
   if (!comercializadora) {
     return res.status(400).json({ success: false, message: 'Se requiere la comercializadora.' });
   }
 
   try {
-    // Definir la fecha a consultar (por defecto hoy en YYYY-MM-DD)
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
-    const targetDate = fecha || (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+    const today = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+    
+    const targetDesde = fechaDesde || today;
+    const targetHasta = fechaHasta || today;
+
+    // Obtener array de fechas
+    const getDatesInRange = (startStr, endStr) => {
+      const dates = [];
+      let currentDate = new Date(startStr + 'T00:00:00');
+      const end = new Date(endStr + 'T00:00:00');
+      
+      // Límite de seguridad: máximo 31 días
+      let days = 0;
+      while (currentDate <= end && days <= 31) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+        days++;
+      }
+      return dates;
+    };
+
+    const dates = getDatesInRange(targetDesde, targetHasta);
 
     // 1. Obtener TODOS los centros de distribución de esta comercializadora desde Oracle
     const centrosOracle = await getCentrosDistribucionOracle(comercializadora);
 
-    // 2. Obtener los registros reales desde SQLite para la fecha solicitada
+    // 2. Obtener los registros reales desde SQLite para el rango solicitado
     const authDb = await getAuthDb();
-    const declaradosHoy = await authDb.all(
-      "SELECT DISTINCT nombre_centro, marca_temporal FROM stock_diario WHERE fecha_stock LIKE ?",
-      [`${targetDate}%`]
+    const declaradosRango = await authDb.all(
+      "SELECT nombre_centro, marca_temporal, fecha_stock FROM stock_diario WHERE fecha_stock >= ? AND fecha_stock <= ?",
+      [`${targetDesde}T00:00`, `${targetHasta}T23:59`]
     );
 
-    // Convertir a un mapa para búsqueda rápida
+    // Convertir a un mapa para búsqueda rápida: mapa[nombre_centro][fecha]
     const mapaDeclaraciones = {};
-    for (const dec of declaradosHoy) {
-      mapaDeclaraciones[dec.nombre_centro] = dec.marca_temporal;
+    for (const dec of declaradosRango) {
+      const datePart = dec.fecha_stock.split('T')[0];
+      if (!mapaDeclaraciones[dec.nombre_centro]) {
+        mapaDeclaraciones[dec.nombre_centro] = {};
+      }
+      mapaDeclaraciones[dec.nombre_centro][datePart] = dec.marca_temporal;
     }
 
-    // 3. Cruzar datos
-    const reporte = centrosOracle.map(centro => {
-      // El nombre concatenado es el id en centrosOracle (ej. Test/82PR123/123)
-      const marcaTemporal = mapaDeclaraciones[centro.dato_concatenado];
-      const completado = !!marcaTemporal;
-      
-      return {
-        ...centro,
-        estado: completado ? 'COMPLETADO' : 'PENDIENTE',
-        hora_registro: completado ? new Date(marcaTemporal).toISOString() : null
-      };
-    });
+    // 3. Cruzar datos (Centros x Fechas)
+    const reporte = [];
+    for (const date of dates) {
+      for (const centro of centrosOracle) {
+        const marcaTemporal = mapaDeclaraciones[centro.dato_concatenado]?.[date];
+        const completado = !!marcaTemporal;
+        
+        reporte.push({
+          ...centro,
+          fecha_objetivo: date, // Nuevo campo
+          estado: completado ? 'COMPLETADO' : 'PENDIENTE',
+          hora_registro: completado ? new Date(marcaTemporal).toISOString() : null
+        });
+      }
+    }
 
-    // Ordenar: primero los pendientes, luego alfabéticamente
+    // Ordenar: primero fechas más recientes, luego pendientes, luego alfabéticamente
     reporte.sort((a, b) => {
+      if (a.fecha_objetivo !== b.fecha_objetivo) return b.fecha_objetivo.localeCompare(a.fecha_objetivo);
       if (a.estado === b.estado) return a.nombre.localeCompare(b.nombre);
       return a.estado === 'PENDIENTE' ? -1 : 1;
     });

@@ -236,3 +236,14 @@ export const updateProfileHandler = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
 };
+
+export const getConfiguracionHandler = async (req, res) => {
+  try {
+    const authDb = await getAuthDb();
+    const configRow = await authDb.get("SELECT valor FROM configuracion WHERE llave = 'hora_cierre'");
+    const horaCierre = configRow ? parseInt(configRow.valor, 10) : 12;
+    res.json({ success: true, horaCierre });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};

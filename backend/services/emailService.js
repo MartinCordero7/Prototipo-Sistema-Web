@@ -107,11 +107,16 @@ export const enviarCredenciales = async (destinatario, username, password, nombr
   }
 };
 
-export const enviarAlertaIncumplimiento = async (correo, nombreCentro) => {
+export const enviarAlertaIncumplimiento = async (correo, nombreComercializadora, fecha, csvContent) => {
+  // Formatear la fecha para que se lea mejor en el correo (Ej: "19 de Agosto de 2026")
+  const dateObj = new Date(fecha + 'T00:00:00');
+  const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
+  const fechaFormateada = dateObj.toLocaleDateString('es-ES', opcionesFecha);
+
   const mailOptions = {
-    from: `"Control de Hidrocarburos" <${process.env.SMTP_USER}>`,
+    from: `"Control de Hidrocarburos" <${process.env.SMTP_USER || 'no-reply@controlhidrocarburos.gob.ec'}>`,
     to: correo,
-    subject: '⚠️ Alerta de Incumplimiento: Ingreso de Stock Diario',
+    subject: 'Seguimiento y monitoreo del ingreso de información de los niveles de stock de las Estaciones de Servicio',
     html: `
       <!DOCTYPE html>
       <html>
@@ -119,46 +124,69 @@ export const enviarAlertaIncumplimiento = async (correo, nombreCentro) => {
         <meta charset="UTF-8">
       </head>
       <body style="margin: 0; padding: 20px; background-color: #f9f9f9;">
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
-          <div style="background-color: #d32f2f; color: white; padding: 20px; text-align: center;">
-          <h2 style="margin: 0;">Alerta de Incumplimiento</h2>
-        </div>
-        <div style="padding: 30px; background-color: #f9f9f9; color: #333;">
-          <p style="font-size: 16px;">Estimado usuario del centro <strong>${nombreCentro}</strong>,</p>
-          <p style="font-size: 16px; line-height: 1.5;">
-            El sistema ha detectado que ha finalizado el horario establecido para el registro de inventario diario y <strong>no hemos recibido su declaración de stock</strong>.
-          </p>
-          <p style="font-size: 16px; line-height: 1.5;">
-            Le recordamos que el ingreso de esta información es obligatorio. Por favor, regularice su situación a la brevedad posible.
-          </p>
-          <p style="font-size: 14px; color: #666; margin-top: 30px; text-align: center;">
-            Este es un correo automático. Si ya realizó su registro, por favor ignore este mensaje.
-          </p>
+        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
           
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: left; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563;">
-            <p style="margin: 0 0 5px 0;">Saludos cordiales,</p>
-            <p style="margin: 0 0 2px 0; color: #111827;"><strong>Dirección Técnica de Monitoreo, Estudios, Información y Estadística</strong></p>
-            <p style="margin: 0 0 2px 0;">Calle Estadio N10-285 y Manuela Cañizares</p>
-            <p style="margin: 0 0 2px 0;">(593) 399-6500</p>
-            <p style="margin: 0 0 2px 0;">Código postal: 170803 / Quito - Ecuador</p>
-            <p style="margin: 0 0 15px 0;"><a href="https://www.controlhidrocarburos.gob.ec" style="color: #3b82f6; text-decoration: none;">www.controlhidrocarburos.gob.ec</a></p>
-            <img src="cid:logoarch" alt="Logo Institucional" style="max-height: 70px;" />
+          <!-- Banner Superior -->
+          <div style="background-color: #1f315c; color: white; padding: 20px; text-align: center;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 500;">Agencia de Regulación y Control de Hidrocarburos</h2>
+          </div>
+
+          <!-- Contenido del Mensaje -->
+          <div style="padding: 30px; background-color: #ffffff; color: #111827; text-align: justify; line-height: 1.6;">
+            <p style="font-size: 15px; margin-top: 0;">Estimada <strong>${nombreComercializadora}</strong>, saludos</p>
+            
+            <p style="font-size: 15px;">
+              La Agencia de Regulación y Control de Hidrocarburos, en el ámbito de sus competencias de regulación y control del abastecimiento de combustibles a nivel nacional, se encuentra realizando el seguimiento y monitoreo de los niveles de stock, para lo cual mediante Oficio Nro. ARCH-DE-2026-0238-OF de 04 de junio de 2026 de la Dirección Ejecutiva dispone:
+            </p>
+
+            <blockquote style="margin: 20px 0; padding: 15px 20px; background-color: #f3f4f6; border-left: 4px solid #1f315c; font-style: italic; color: #374151;">
+              "El registro deberá efectuarse una (1) vez al día, a las 12h00, en el link habilitado por la ARCH a cada comercializadora, reportando las existencias actualizadas a esa hora. La carga de la información deberá completarse hasta las 13h00 del mismo día."
+            </blockquote>
+
+            <p style="font-size: 15px; background-color: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca; color: #991b1b;">
+              Con estos antecedentes se pone en conocimiento que los Centros de Distribución que se encuentran en el documento adjunto no registran ingreso de información en la fecha <strong>${fechaFormateada}</strong>.
+            </p>
+
+            <p style="font-size: 15px;">
+              Finalmente se recuerda la responsabilidad directa de cada comercializadora respecto del ingreso y veracidad de la información correspondiente a su representada y a la totalidad de su red de distribución, y atribuyen al Director Ejecutivo de la ARCH la potestad de sancionar el incumplimiento de las disposiciones del Instructivo, conforme a la Ley de Hidrocarburos y demás normativa aplicable.
+            </p>
+            
+            <!-- Pie de firma -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: left; font-size: 13px; color: #4b5563;">
+              <p style="margin: 0 0 5px 0;">Saludos cordiales,</p>
+              <p style="margin: 0 0 2px 0; color: #111827;"><strong>Dirección Técnica de Monitoreo, Estudios, Información y Estadística</strong></p>
+              <p style="margin: 0 0 2px 0;">Calle Estadio N10-285 y Manuela Cañizares</p>
+              <p style="margin: 0 0 2px 0;">(593) 399-6500</p>
+              <p style="margin: 0 0 2px 0;">Código postal: 170803 / Quito - Ecuador</p>
+              <p style="margin: 0 0 15px 0;"><a href="https://www.controlhidrocarburos.gob.ec" style="color: #3b82f6; text-decoration: none;">www.controlhidrocarburos.gob.ec</a></p>
+              <img src="cid:logoarch" alt="Logo Institucional" style="max-height: 70px;" />
+            </div>
           </div>
         </div>
-      </div>
       </body>
       </html>
-    `
+    `,
+    attachments: [
+      {
+        filename: 'logo.png',
+        path: path.resolve(process.cwd(), '../frontend/Images/Logo ARCH Jun 2026.png'),
+        cid: 'logoarch'
+      },
+      {
+        filename: `Incumplimientos_${nombreComercializadora}_${fecha}.csv`,
+        content: csvContent
+      }
+    ]
   };
 
-  // Agregar los attachments si no estaban
-  mailOptions.attachments = [
-    {
-      filename: 'logo.png',
-      path: path.resolve(process.cwd(), '../frontend/Images/Logo ARCH Jun 2026.png'),
-      cid: 'logoarch'
-    }
-  ];
+  // Si estamos en desarrollo sin SMTP_PASS
+  if (!process.env.SMTP_PASS) {
+    console.log('----------------------------------------------------');
+    console.log(`AVISO: Simulando envío de alerta a: ${correo}`);
+    console.log(`Comercializadora: ${nombreComercializadora} | Archivo Adjunto Generado: Sí`);
+    console.log('----------------------------------------------------');
+    return true;
+  }
 
   try {
     const info = await transporter.sendMail(mailOptions);

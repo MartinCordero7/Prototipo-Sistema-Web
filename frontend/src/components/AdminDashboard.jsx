@@ -1,283 +1,213 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import {
+  IconShield,
+  IconClock,
+  IconMail,
+  IconRefresh,
+  IconCheck,
+  IconWarn,
+  IconUnlock,
+  IconClose,
+  IconInbox
+} from './Icons';
+
+const TABS = [
+  { id: 'horarios', label: 'Horarios del Sistema', icon: <IconClock /> },
+  { id: 'bloqueos', label: 'Cuentas Bloqueadas',   icon: <IconShield /> },
+  { id: 'alertas',  label: 'Historial de Alertas', icon: <IconMail /> },
+];
+
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('bloqueos'); // 'bloqueos', 'horarios', 'alertas'
-  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [activeTab, setActiveTab]         = useState('horarios');
+  const [blockedUsers, setBlockedUsers]   = useState([]);
   const [alertasHistory, setAlertasHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
-  const [horaCierre, setHoraCierre] = useState(12);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState('');
+  const [horaCierre, setHoraCierre]       = useState(12);
   const [updatingConfig, setUpdatingConfig] = useState(false);
   const [configSuccess, setConfigSuccess] = useState('');
-  
-  const [unlockTarget, setUnlockTarget] = useState(null);
+  const [unlockTarget, setUnlockTarget]   = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar si es administrador
     const isAuth = localStorage.getItem('isAuthenticated');
     const userStr = localStorage.getItem('userData');
-    
-    if (!isAuth || !userStr) {
-      navigate('/');
-      return;
-    }
-    
+    if (!isAuth || !userStr) { navigate('/'); return; }
     const user = JSON.parse(userStr);
-    if (user.comercializadora !== 'ADMINISTRADOR') {
-      navigate('/formulario');
-      return;
-    }
-
-    fetchBlockedUsers();
-    fetchConfig();
-    fetchAlertasHistory();
+    if (user.comercializadora !== 'ADMINISTRADOR') { navigate('/formulario'); return; }
+    fetchBlockedUsers(); fetchConfig(); fetchAlertasHistory();
   }, [navigate]);
 
   const fetchAlertasHistory = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:3000/api/admin/alertas');
-      const data = await response.json();
-      if (data.success) {
-        setAlertasHistory(data.data);
-      }
-    } catch (err) {
-      console.error('Error obteniendo historial de alertas:', err);
-    } finally {
-      setLoading(false);
-    }
+    try { setLoading(true); const r = await fetch('http://localhost:3000/api/admin/alertas'); const d = await r.json(); if (d.success) setAlertasHistory(d.data); }
+    catch (e) { console.error(e); } finally { setLoading(false); }
   };
-
   const fetchConfig = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/api/admin/config');
-      const data = await response.json();
-      if (data.success) {
-        setHoraCierre(data.horaCierre);
-      }
-    } catch (err) {
-      console.error('Error obteniendo config:', err);
-    }
+    try { const r = await fetch('http://localhost:3000/api/admin/config'); const d = await r.json(); if (d.success) setHoraCierre(d.horaCierre); }
+    catch (e) { console.error(e); }
   };
-
   const handleUpdateConfig = async () => {
     try {
-      setUpdatingConfig(true);
-      setConfigSuccess('');
-      setError('');
-      
-      const response = await fetch('http://localhost:3000/api/admin/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ horaCierre: parseInt(horaCierre, 10) })
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        setConfigSuccess(data.message);
-        setTimeout(() => setConfigSuccess(''), 3000);
-      } else {
-        setError(data.message || 'Error actualizando horario.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Error al conectar con el servidor.');
-    } finally {
-      setUpdatingConfig(false);
-    }
+      setUpdatingConfig(true); setConfigSuccess(''); setError('');
+      const r = await fetch('http://localhost:3000/api/admin/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ horaCierre: parseInt(horaCierre, 10) }) });
+      const d = await r.json();
+      if (d.success) { setConfigSuccess(d.message); setTimeout(() => setConfigSuccess(''), 3000); } else setError(d.message || 'Error actualizando horario.');
+    } catch (e) { setError('Error al conectar.'); } finally { setUpdatingConfig(false); }
   };
-
   const fetchBlockedUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:3000/api/admin/blocked-users');
-      const data = await response.json();
-      
-      if (data.success) {
-        setBlockedUsers(data.data);
-      } else {
-        setError(data.message || 'Error al obtener usuarios bloqueados.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Error al conectar con el servidor.');
-    } finally {
-      setLoading(false);
-    }
+    try { setLoading(true); const r = await fetch('http://localhost:3000/api/admin/blocked-users'); const d = await r.json(); if (d.success) setBlockedUsers(d.data); else setError(d.message || 'Error.'); }
+    catch (e) { setError('Error al conectar.'); } finally { setLoading(false); }
   };
-
   const confirmUnblock = async () => {
     if (!unlockTarget) return;
-
     try {
-      const response = await fetch('http://localhost:3000/api/admin/unblock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: unlockTarget })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setSuccessMessage(data.message);
-        setUnlockTarget(null);
-        fetchBlockedUsers();
-      } else {
-        setError(data.message || 'Error al desbloquear usuario.');
-        setUnlockTarget(null);
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Error al conectar con el servidor.');
-      setUnlockTarget(null);
-    }
+      const r = await fetch('http://localhost:3000/api/admin/unblock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: unlockTarget }) });
+      const d = await r.json();
+      if (d.success) { setSuccessMessage(d.message); setUnlockTarget(null); fetchBlockedUsers(); }
+      else { setError(d.message || 'Error.'); setUnlockTarget(null); }
+    } catch (e) { setError('Error al conectar.'); setUnlockTarget(null); }
   };
 
+  // ──────────────────────────────────────────────────────────────────────────────
+  // RENDER: Horarios
+  // ──────────────────────────────────────────────────────────────────────────────
   const renderScheduleConfig = () => (
-    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-      <h2 className="form-title" style={{ color: 'var(--primary-color)' }}>Configuración Global del Sistema</h2>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Ajusta los parámetros operativos generales de la plataforma.</p>
-      
-      {error && activeTab === 'horarios' && <div className="error-text" style={{ marginBottom: '1rem' }}>{error}</div>}
-      
-      <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ marginTop: 0, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          ⏱️ Horario Límite de Ingreso
-        </h3>
-        <p style={{ color: '#6b7280', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-          Define la hora máxima (en formato 24h) hasta la cual las estaciones de servicio pueden registrar su información diaria. 
-          Ejemplo: Si estableces <b>12</b>, el sistema bloqueará el acceso a partir de las 12:00 PM hasta el día siguiente.
+    <div style={{ animation: 'adminFadeIn 0.25s ease-out' }}>
+      {/* Page title */}
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>Horarios del Sistema</h2>
+        <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+          Configura el horario límite diario para el ingreso de información de las estaciones.
         </p>
+      </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Hora de cierre:</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input 
-                type="number" 
-                min="0" 
-                max="23" 
-                value={horaCierre}
-                onChange={(e) => setHoraCierre(e.target.value)}
-                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db', width: '100px', fontSize: '1.2rem', textAlign: 'center', outline: 'none', transition: 'border-color 0.2s' }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-              />
-              <span style={{ color: '#4b5563', fontSize: '1.2rem', fontWeight: 'bold' }}>: 00 hrs</span>
+      {error && activeTab === 'horarios' && (
+        <div className="corp-alert corp-alert-error" style={{ marginBottom: '24px' }}><IconWarn /> {error}</div>
+      )}
+
+      {/* Main config card — unificada */}
+      <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '36px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '32px' }}>
+          
+          <div style={{ flex: 1, minWidth: '300px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#0f172a' }}>Configuración de Cierre</h3>
             </div>
+            <p style={{ margin: '0', fontSize: '14px', color: '#64748b', lineHeight: 1.6, maxWidth: '500px' }}>
+              Define la hora máxima (formato 24h) hasta la cual las estaciones de servicio pueden
+              registrar su información diaria. Pasada esta hora, el sistema se bloqueará
+              automáticamente y se enviará una alerta a los infractores.
+            </p>
           </div>
-          <button 
-            onClick={handleUpdateConfig}
-            disabled={updatingConfig}
-            style={{
-              backgroundColor: 'var(--accent-color)',
-              color: 'white',
-              border: 'none',
-              padding: '0.9rem 1.5rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              height: 'fit-content',
-              transition: 'background-color 0.2s, transform 0.1s',
-              boxShadow: '0 4px 6px rgba(11, 40, 93, 0.2)'
-            }}
-            onMouseOver={(e) => !updatingConfig && (e.target.style.backgroundColor = '#0f2042')}
-            onMouseOut={(e) => !updatingConfig && (e.target.style.backgroundColor = 'var(--accent-color)')}
-            onMouseDown={(e) => e.target.style.transform = 'scale(0.98)'}
-            onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
-          >
-            {updatingConfig ? 'Guardando...' : 'Guardar Horario'}
-          </button>
+
+          <div style={{ padding: '24px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
+             <div>
+               <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                 Hora Límite
+               </label>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                 <input
+                   type="number" min="0" max="23" value={horaCierre}
+                   onChange={(e) => setHoraCierre(e.target.value)}
+                   className="corp-input"
+                   style={{ width: '90px', textAlign: 'center', fontSize: '24px', fontWeight: '800', height: '52px', letterSpacing: '-0.02em', backgroundColor: 'white' }}
+                 />
+                 <span style={{ fontSize: '20px', color: '#94a3b8', fontWeight: '400' }}>: 00</span>
+                 <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>hrs</span>
+               </div>
+             </div>
+             
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '160px' }}>
+               <button onClick={handleUpdateConfig} disabled={updatingConfig}
+                 className="corp-btn corp-btn-primary" style={{ height: '48px', padding: '0 24px', fontSize: '14px', width: '100%' }}>
+                 {updatingConfig ? 'Guardando...' : 'Guardar Horario'}
+               </button>
+               {configSuccess && (
+                 <div style={{ color: '#16a34a', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}>
+                   <IconCheck /> Guardado con éxito
+                 </div>
+               )}
+             </div>
+          </div>
+
         </div>
-        {configSuccess && <div style={{ color: '#10b981', marginTop: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>✓ {configSuccess}</div>}
       </div>
     </div>
   );
 
+  // ──────────────────────────────────────────────────────────────────────────────
+  // RENDER: Cuentas bloqueadas
+  // ──────────────────────────────────────────────────────────────────────────────
   const renderBlockedUsers = () => (
-    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div style={{ animation: 'adminFadeIn 0.25s ease-out' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
         <div>
-          <h2 className="form-title" style={{ color: 'var(--danger-color)', margin: 0 }}>Cuentas Bloqueadas por Seguridad</h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Monitorea y gestiona las estaciones bloqueadas por múltiples intentos fallidos.</p>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>Cuentas Bloqueadas</h2>
+          <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+            Gestiona las estaciones bloqueadas por múltiples intentos fallidos de acceso.
+          </p>
         </div>
-        <button 
-          onClick={fetchBlockedUsers} 
-          style={{
-            backgroundColor: 'white',
-            color: 'var(--accent-color)',
-            border: '1px solid var(--accent-color)',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => { e.target.style.backgroundColor = 'var(--accent-color)'; e.target.style.color = 'white'; }}
-          onMouseOut={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'var(--accent-color)'; }}
-        >
-          ↻ Actualizar Lista
+        <button onClick={fetchBlockedUsers} className="corp-btn corp-btn-outline" style={{ width: 'auto', height: '40px', padding: '0 20px', fontSize: '13px', gap: '6px', flexShrink: 0 }}>
+          <IconRefresh /> Actualizar
         </button>
       </div>
 
-      {error && activeTab === 'bloqueos' && <div className="error-text" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {error && activeTab === 'bloqueos' && (
+        <div className="corp-alert corp-alert-error" style={{ marginBottom: '24px' }}><IconWarn /> {error}</div>
+      )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Cargando datos...</div>
+        <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '80px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          Cargando datos...
+        </div>
       ) : blockedUsers.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', backgroundColor: 'white', borderRadius: '12px', border: '1px dashed #d1d5db', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛡️</div>
-          <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Sistema Seguro</h3>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No hay usuarios bloqueados en este momento. Todas las estaciones operan con normalidad.</p>
+        <div style={{ textAlign: 'center', padding: '80px 40px', backgroundColor: 'white', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          </div>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>Sistema Seguro</h3>
+          <p style={{ margin: 0, fontSize: '14px', color: '#64748b', maxWidth: '340px', marginInline: 'auto', lineHeight: 1.6 }}>
+            No hay usuarios bloqueados en este momento. Todas las estaciones operan con normalidad.
+          </p>
         </div>
       ) : (
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div className="corp-table-container">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Comercializadora</th>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Usuario / Estación</th>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Bloqueado Hasta</th>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#4b5563', fontWeight: '600' }}>Acción</th>
+                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  {['Comercializadora', 'Usuario / Estación', 'Bloqueado Hasta', 'Acción'].map((h, i) => (
+                    <th key={h} style={{ padding: '14px 24px', textAlign: i === 3 ? 'right' : 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {blockedUsers.map((user) => (
-                  <tr key={user.username} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background-color 0.1s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-primary)' }}>{user.comercializadora}</td>
-                    <td style={{ padding: '1rem 1.5rem' }}>
-                      <div style={{ fontWeight: 'bold', color: 'var(--accent-color)' }}>{user.username}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{user.nombre_estacion}</div>
+                  <tr key={user.username} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '16px 24px', color: '#1e293b', fontWeight: '500' }}>{user.comercializadora}</td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <div style={{ fontWeight: '600', color: '#0f172a' }}>{user.username}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{user.nombre_estacion}</div>
                     </td>
-                    <td style={{ padding: '1rem 1.5rem', color: 'var(--danger-color)', fontWeight: '600', fontSize: '0.95rem' }}>
-                      {new Date(user.bloqueado_hasta).toLocaleString()}
+                    <td style={{ padding: '16px 24px' }}>
+                      <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: '600', backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+                        {new Date(user.bloqueado_hasta).toLocaleString()}
+                      </span>
                     </td>
-                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                      <button 
-                        onClick={() => setUnlockTarget(user.username)}
-                        style={{
-                          backgroundColor: '#10b981',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          transition: 'background-color 0.2s, transform 0.1s',
-                          boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
-                        }}
-                        onMouseOver={(e) => e.target.style.backgroundColor = '#059669'}
-                        onMouseOut={(e) => e.target.style.backgroundColor = '#10b981'}
-                        onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-                        onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
-                      >
-                        Desbloquear
+                    <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                      <button onClick={() => setUnlockTarget(user.username)}
+                        style={{ backgroundColor: 'transparent', color: '#2563eb', border: '1px solid #bfdbfe', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', transition: 'all 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        <IconUnlock /> Desbloquear
                       </button>
                     </td>
                   </tr>
@@ -290,73 +220,56 @@ const AdminDashboard = () => {
     </div>
   );
 
+  // ──────────────────────────────────────────────────────────────────────────────
+  // RENDER: Historial alertas
+  // ──────────────────────────────────────────────────────────────────────────────
   const renderAlertasHistory = () => (
-    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div style={{ animation: 'adminFadeIn 0.25s ease-out' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
         <div>
-          <h2 className="form-title" style={{ color: 'var(--primary-color)', margin: 0 }}>Historial de Alertas de Incumplimiento</h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Registro automático de los correos enviados a las estaciones que no declararon su stock a tiempo.</p>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>Historial de Alertas</h2>
+          <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+            Registro de correos automáticos enviados a estaciones que no declararon su stock a tiempo.
+          </p>
         </div>
-        <button 
-          onClick={fetchAlertasHistory} 
-          style={{
-            backgroundColor: 'white',
-            color: 'var(--accent-color)',
-            border: '1px solid var(--accent-color)',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => { e.target.style.backgroundColor = 'var(--accent-color)'; e.target.style.color = 'white'; }}
-          onMouseOut={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'var(--accent-color)'; }}
-        >
-          ↻ Actualizar Historial
+        <button onClick={fetchAlertasHistory} className="corp-btn corp-btn-outline" style={{ width: 'auto', height: '40px', padding: '0 20px', fontSize: '13px', gap: '6px', flexShrink: 0 }}>
+          <IconRefresh /> Actualizar
         </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Cargando historial...</div>
+        <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '80px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          Cargando historial...
+        </div>
       ) : alertasHistory.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', backgroundColor: 'white', borderRadius: '12px', border: '1px dashed #d1d5db', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✉️</div>
-          <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Bandeja Limpia</h3>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Aún no se han enviado alertas automáticas de incumplimiento.</p>
+        <div style={{ textAlign: 'center', padding: '80px 40px', backgroundColor: 'white', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}><IconInbox /></div>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>Bandeja Limpia</h3>
+          <p style={{ margin: 0, fontSize: '14px', color: '#64748b', maxWidth: '320px', marginInline: 'auto', lineHeight: 1.6 }}>
+            Aún no se han enviado alertas automáticas de incumplimiento.
+          </p>
         </div>
       ) : (
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div className="corp-table-container">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Fecha y Hora</th>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Centro de Distribución</th>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#4b5563', fontWeight: '600' }}>Correo Destinatario</th>
-                  <th style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#4b5563', fontWeight: '600' }}>Estado</th>
+                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  {['Fecha y Hora', 'Centro de Distribución', 'Correo Destinatario', 'Estado'].map((h, i) => (
+                    <th key={h} style={{ padding: '14px 24px', textAlign: i === 3 ? 'center' : 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {alertasHistory.map((alerta) => (
-                  <tr key={alerta.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background-color 0.1s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                      {new Date(alerta.fecha_emision).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                      {alerta.nombre_centro}
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)' }}>
-                      {alerta.correo_destinatario}
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                      <span style={{
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.85rem',
-                        fontWeight: 'bold',
-                        backgroundColor: alerta.estado === 'Enviado' ? '#d1fae5' : '#fee2e2',
-                        color: alerta.estado === 'Enviado' ? '#065f46' : '#991b1b'
-                      }}>
+                  <tr key={alerta.id} style={{ borderBottom: '1px solid #f1f5f9' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '16px 24px', color: '#1e293b', fontWeight: '500' }}>{new Date(alerta.fecha_emision).toLocaleString()}</td>
+                    <td style={{ padding: '16px 24px', color: '#0f172a', fontWeight: '600' }}>{alerta.nombre_centro}</td>
+                    <td style={{ padding: '16px 24px', color: '#64748b' }}>{alerta.correo_destinatario}</td>
+                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                      <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '600', backgroundColor: alerta.estado === 'Enviado' ? '#f0fdf4' : '#fef2f2', color: alerta.estado === 'Enviado' ? '#16a34a' : '#dc2626', border: `1px solid ${alerta.estado === 'Enviado' ? '#bbf7d0' : '#fecaca'}` }}>
                         {alerta.estado}
                       </span>
                     </td>
@@ -370,165 +283,126 @@ const AdminDashboard = () => {
     </div>
   );
 
+  // ──────────────────────────────────────────────────────────────────────────────
+  // LAYOUT ROOT
+  // ──────────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f3f4f6', margin: '-2rem' }}>
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .sidebar-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            width: 100%;
-            padding: 1rem 1.5rem;
-            background: none;
-            border: none;
-            text-align: left;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #9ca3af;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 4px solid transparent;
-          }
-          .sidebar-btn:hover {
-            background-color: var(--accent-hover);
-            color: white;
-          }
-          .sidebar-btn.active {
-            background-color: var(--accent-hover);
-            color: white;
-            border-left-color: white;
-          }
-        `}
-      </style>
+    <div style={{ display: 'flex', flex: 1, minHeight: 0, width: '100%' }}>
+      <style>{`
+        @keyframes adminFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .adm-nav-btn {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 11px 16px;
+          border: none;
+          border-radius: 7px;
+          background: none;
+          text-align: left;
+          font-size: 13.5px;
+          font-weight: 500;
+          color: #475569;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-family: inherit;
+        }
+        .adm-nav-btn:hover {
+          background-color: #f1f5f9;
+          color: #0f172a;
+        }
+        .adm-nav-btn.active {
+          background-color: #eff6ff;
+          color: #1d4ed8;
+          font-weight: 600;
+        }
+        .adm-nav-btn.active svg { stroke: #2563eb; }
+      `}</style>
 
-      {/* Sidebar (Menú Lateral) */}
-      <aside style={{ 
-        width: '260px', 
-        backgroundColor: 'var(--accent-color)', 
-        color: 'white',
+      {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
+      <aside style={{
+        width: '256px',
+        minWidth: '256px',
+        backgroundColor: 'white',
+        borderRight: '1px solid #e2e8f0',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '4px 0 10px rgba(0,0,0,0.1)'
+        padding: '28px 16px',
+        boxSizing: 'border-box',
+        alignSelf: 'stretch',  /* se extiende a la altura del contenido principal */
       }}>
-        <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ width: '40px', height: '40px', backgroundColor: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--accent-color)' }}>
-            A
-          </div>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>Admin Portal</h2>
-          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#9ca3af' }}>Control de Seguridad</p>
-        </div>
-
-        <nav style={{ flex: 1, paddingTop: '1.5rem' }}>
-          <button 
-            className={`sidebar-btn ${activeTab === 'bloqueos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('bloqueos')}
-          >
-            <span style={{ fontSize: '1.2rem' }}>🛡️</span>
-            Cuentas Bloqueadas
-          </button>
-          
-          <button 
-            className={`sidebar-btn ${activeTab === 'horarios' ? 'active' : ''}`}
-            onClick={() => setActiveTab('horarios')}
-          >
-            <span style={{ fontSize: '1.2rem' }}>⏱️</span>
-            Horarios del Sistema
-          </button>
-
-          <button 
-            className={`sidebar-btn ${activeTab === 'alertas' ? 'active' : ''}`}
-            onClick={() => setActiveTab('alertas')}
-          >
-            <span style={{ fontSize: '1.2rem' }}>✉️</span>
-            Historial de Alertas
-          </button>
-        </nav>
-      </aside>
-
-      {/* Main Content (Área Principal) */}
-      <main style={{ flex: 1, padding: '3rem', overflowY: 'auto' }}>
-        {activeTab === 'bloqueos' && renderBlockedUsers()}
-        {activeTab === 'horarios' && renderScheduleConfig()}
-        {activeTab === 'alertas' && renderAlertasHistory()}
-      </main>
-
-      {/* Modal de Confirmación */}
-      {unlockTarget && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <div className="form-card modal-content" style={{ textAlign: 'center', padding: '2.5rem', borderRadius: '16px' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
-            <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem', fontSize: '1.4rem' }}>Confirmar Acción</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem' }}>
-              ¿Estás seguro de que deseas desbloquear la cuenta <strong>{unlockTarget}</strong> y resetear sus intentos fallidos?
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-              <button 
-                onClick={() => setUnlockTarget(null)}
-                style={{
-                  backgroundColor: '#f3f4f6',
-                  color: '#4b5563',
-                  border: '1px solid #d1d5db',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#e5e7eb'}
-                onMouseOut={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={confirmUnblock}
-                style={{
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  boxShadow: '0 4px 6px rgba(16, 185, 129, 0.2)'
-                }}
-              >
-                Sí, Desbloquear
-              </button>
+        {/* Brand */}
+        <div style={{ marginBottom: '32px', padding: '0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', backgroundColor: '#1f315c', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Panel Admin</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>Control del sistema</p>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Modal de Éxito */}
-      {successMessage && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <div className="form-card modal-content" style={{ textAlign: 'center', padding: '2.5rem', borderRadius: '16px' }}>
-            <div style={{ fontSize: '3.5rem', color: '#10b981', marginBottom: '1rem' }}>✓</div>
-            <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem', fontSize: '1.4rem' }}>Operación Exitosa</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem' }}>{successMessage}</p>
-            <button 
-              onClick={() => setSuccessMessage('')}
-              style={{
-                backgroundColor: 'var(--accent-color)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 2.5rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                boxShadow: '0 4px 6px rgba(11, 40, 93, 0.2)'
-              }}
-            >
-              Aceptar
+        <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '0 0 16px 0' }} />
+
+        <p style={{ margin: '0 0 8px 0', padding: '0 4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>Gestión</p>
+
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          {TABS.map(tab => (
+            <button key={tab.id} className={`adm-nav-btn ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+              {tab.icon} {tab.label}
             </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* ── Área principal ────────────────────────────────────────────────────── */}
+      <main style={{ flex: 1, padding: '48px 56px', boxSizing: 'border-box' }}>
+        {activeTab === 'horarios' && renderScheduleConfig()}
+        {activeTab === 'bloqueos' && renderBlockedUsers()}
+        {activeTab === 'alertas'  && renderAlertasHistory()}
+
+        {/* Modal: Confirmar Desbloqueo */}
+        {unlockTarget && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title"><span style={{ color: '#d97706' }}><IconWarn /></span> Confirmar Desbloqueo</h3>
+                <button onClick={() => setUnlockTarget(null)} className="corp-modal-close"><IconClose /></button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>¿Confirmas que deseas desbloquear la cuenta <strong>{unlockTarget}</strong> y resetear sus intentos fallidos?</p>
+              </div>
+              <div className="corp-modal-footer">
+                <button onClick={() => setUnlockTarget(null)} className="corp-btn corp-btn-outline" style={{ width: 'auto' }}>Cancelar</button>
+                <button onClick={confirmUnblock} className="corp-btn corp-btn-primary" style={{ width: 'auto', backgroundColor: '#dc2626' }}>Sí, Desbloquear</button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Modal: Éxito */}
+        {successMessage && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title"><span style={{ color: '#16a34a' }}><IconCheck /></span> Operación Exitosa</h3>
+                <button onClick={() => setSuccessMessage('')} className="corp-modal-close"><IconClose /></button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>{successMessage}</p>
+              </div>
+              <div className="corp-modal-footer">
+                <button onClick={() => setSuccessMessage('')} className="corp-btn corp-btn-primary" style={{ width: 'auto' }}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 };

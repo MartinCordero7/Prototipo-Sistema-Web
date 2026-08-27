@@ -29,8 +29,17 @@ export const startCronJobs = () => {
             AND nombre_estacion NOT LIKE '%AUDITORIA%'
         `);
 
+        // Obtener correos de los auditores por comercializadora
+        const auditores = await db.all(`
+          SELECT comercializadora, correo FROM usuarios 
+          WHERE nombre_estacion = 'AUDITORIA'
+        `);
+        const correosAuditores = {};
+        for (const aud of auditores) {
+          correosAuditores[aud.comercializadora] = aud.correo;
+        }
+
         // 2. Obtener los centros que SÍ declararon hoy
-        // Agrupamos por correo_usuario o nombre_centro
         const declararonHoy = await db.all(`
           SELECT DISTINCT nombre_centro 
           FROM stock_diario 
@@ -39,38 +48,66 @@ export const startCronJobs = () => {
         
         const centrosConDeclaracion = declararonHoy.map(r => r.nombre_centro);
 
-        let enviados = 0;
-        let fallidos = 0;
+        // 3. Identificar infractores y agrupar por Comercializadora
+        const infractoresPorComercializadora = {};
 
         for (const estacion of estaciones) {
           if (!centrosConDeclaracion.includes(estacion.nombre_estacion)) {
-            // Esta estación NO declaró hoy
-            if (estacion.correo) {
-              try {
-                console.log(`[CRON] Enviando alerta a ${estacion.nombre_estacion} (${estacion.correo})...`);
-                
-                // Enviar correo (usando una función que crearemos en emailService.js)
-                await enviarAlertaIncumplimiento(estacion.correo, estacion.nombre_estacion);
-                
-                // Registrar en el historial de base de datos
-                await db.run(`
-                  INSERT INTO alertas_diarias (correo_destinatario, nombre_centro, estado) 
-                  VALUES (?, ?, 'Enviado')
-                `, [estacion.correo, estacion.nombre_estacion]);
-                enviados++;
-              } catch (error) {
-                console.error(`[CRON] Fallo enviando correo a ${estacion.correo}:`, error.message);
-                await db.run(`
-                  INSERT INTO alertas_diarias (correo_destinatario, nombre_centro, estado) 
-                  VALUES (?, ?, 'Fallido')
-                `, [estacion.correo, estacion.nombre_estacion]);
-                fallidos++;
-              }
+            if (!infractoresPorComercializadora[estacion.comercializadora]) {
+              infractoresPorComercializadora[estacion.comercializadora] = [];
             }
+            infractoresPorComercializadora[estacion.comercializadora].push(estacion);
+          }
+        }
+
+        // 4. Enviar un correo por cada Comercializadora con archivo adjunto
+        let enviados = 0;
+        let fallidos = 0;
+
+        for (const [org, infractores] of Object.entries(infractoresPorComercializadora)) {
+          const correoDestino = correosAuditores[org];
+          
+          if (!correoDestino) {
+            console.log(`[CRON] No hay correo configurado para el auditor de ${org}. Omitiendo alerta.`);
+            continue;
+          }
+
+          try {
+            console.log(`[CRON] Enviando alerta consolidada a la comercializadora ${org} (${correoDestino}) con ${infractores.length} centros...`);
+            
+            // Generar contenido del CSV en memoria
+            const csvHeaders = "Comercializadora,Centro de Distribucion,Codigo Unico,Fecha de Incumplimiento\n";
+            const csvRows = infractores.map(est => {
+              // Parsear el ID que usamos como código único, o extraerlo del nombre
+              return `"${est.comercializadora}","${est.nombre_estacion}","${est.id}","${todayDate}"`;
+            }).join("\n");
+            
+            const csvContent = "\uFEFF" + csvHeaders + csvRows; // \uFEFF para BOM UTF-8
+
+            // Enviar correo
+            await enviarAlertaIncumplimiento(correoDestino, org, todayDate, csvContent);
+            
+            // Registrar historial por cada estación reportada
+            for (const est of infractores) {
+              await db.run(`
+                INSERT INTO alertas_diarias (correo_destinatario, nombre_centro, estado) 
+                VALUES (?, ?, 'Enviado')
+              `, [correoDestino, est.nombre_estacion]);
+            }
+            enviados++;
+          } catch (error) {
+            console.error(`[CRON] Fallo enviando correo a ${org}:`, error.message);
+            for (const est of infractores) {
+              await db.run(`
+                INSERT INTO alertas_diarias (correo_destinatario, nombre_centro, estado) 
+                VALUES (?, ?, 'Fallido')
+              `, [correoDestino, est.nombre_estacion]);
+            }
+            fallidos++;
           }
         }
         
-        console.log(`[CRON] Proceso finalizado. Enviados: ${enviados}, Fallidos: ${fallidos}`);
+        console.log(`[CRON] Proceso finalizado. Correos de Comercializadoras Enviados: ${enviados}, Fallidos: ${fallidos}`);
       }
     } catch (error) {
       console.error('[CRON] Error general en el servicio de tareas automáticas:', error);

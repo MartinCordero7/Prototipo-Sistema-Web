@@ -14,11 +14,18 @@
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-color);
+  background-color: #f8fafc;
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100vh;
 }
 
 * {
@@ -82,128 +89,41 @@ body {
 /* MAIN CONTAINER */
 .app-main {
   flex: 1;
+  min-height: 0;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 6rem 1rem 4rem 1rem;
-  min-height: 100vh; /* Fuerza el scroll (slide bar) para ver el footer */
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .app-container {
+  flex: 1;
+  min-height: 0;          /* propaga la altura hacia abajo correctamente */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
   max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* CARDS */
-.form-card {
-  background-color: var(--card-bg);
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-  border: 1px solid rgba(0,0,0,0.05);
-}
 
-.form-card-large {
-  padding: 3rem 2.5rem;
-}
 
-.form-card-large .form-title {
-  font-size: 1.7rem;
-  margin-bottom: 2rem;
-}
 
-.form-card-large .form-group label {
-  font-size: 1rem;
-  margin-bottom: 0.6rem;
-}
 
-.form-card-large .form-control {
-  padding: 0.85rem 1.05rem;
-  font-size: 1.05rem;
-}
 
-.form-card-large .btn-submit {
-  padding: 0.95rem;
-  font-size: 1.1rem;
-  margin-top: 2rem;
-}
 
-.form-title {
-  text-align: center;
-  color: var(--accent-color);
-  margin-top: 0;
-  margin-bottom: 2rem;
-  font-size: 1.6rem;
-  font-weight: 700;
-}
 
 /* FORM ELEMENTS */
-.form-group {
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-}
 
-.form-group label {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
 
-.form-control {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: all 0.2s;
-  background-color: #f9fafb;
-}
 
-.form-control:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  background-color: #ffffff;
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
 
-.form-control:disabled {
-  background-color: #e5e7eb;
-  cursor: not-allowed;
-}
 
 /* CHECKBOXES & LISTS */
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background: #f9fafb;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-}
 
-.checkbox-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.8rem 0;
-}
 
-.checkbox-item:not(:last-child) {
-  border-bottom: 1px solid #e5e7eb;
-}
 
-.checkbox-item label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-  font-weight: 500;
-  color: var(--text-primary);
-  flex: 1;
-  cursor: pointer;
-}
 
 /* Modern Checkbox styling */
 input[type="checkbox"] {
@@ -213,72 +133,15 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
-.stock-input {
-  width: 140px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-}
 
-.stock-input:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px var(--focus-ring);
-}
 
 /* SUBMIT BUTTON */
-.btn-submit {
-  width: 100%;
-  padding: 0.85rem;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-  margin-top: 1.5rem;
-}
 
-.btn-submit:hover {
-  background-color: var(--accent-hover);
-}
 
-.btn-submit:active {
-  transform: scale(0.99);
-}
 
-.btn-submit:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-  transform: none;
-}
 
-.error-text {
-  color: var(--danger-color);
-  font-size: 0.875rem;
-  margin-top: 0.4rem;
-  font-weight: 500;
-}
 
-.acceptance-container {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
 
-.acceptance-container label {
-  margin: 0;
-  font-weight: normal;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
 
 /* FOOTER */
 .app-footer {
@@ -289,9 +152,8 @@ input[type="checkbox"] {
   line-height: 1.6;
   font-weight: 600;
   text-align: left;
+  flex-shrink: 0; /* anclado al final del flex column del body */
 }
-
-/* ELIMINADO: .app-footer-fixed ya no es necesario */
 
 .footer-divider {
   border: 0;
@@ -301,56 +163,15 @@ input[type="checkbox"] {
 }
 
 /* MODAL / POP-UP */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(17, 24, 39, 0.7); /* Fondo oscuro semitransparente */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  padding: 1rem;
-}
 
-.modal-content {
-  max-width: 450px;
-  width: 100%;
-}
 
 .app-footer p {
   margin: 0.2rem 0;
 }
 
 /* FLOATING HELP BUTTON */
-.btn-help-float {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  padding: 0.8rem 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  z-index: 999;
-}
 
-.btn-help-float:hover {
-  background-color: var(--accent-hover);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-}
 
-.btn-help-float:active {
-  transform: translateY(0);
-}
 
 @media (max-width: 768px) {
   .app-navbar {
@@ -363,4 +184,378 @@ input[type="checkbox"] {
     padding-left: 0;
     text-align: center;
   }
+}
+
+/* =========================================================
+   -- CORPORATE RESKIN TOKENS & GLOBALS --
+   ========================================================= */
+
+/* .corp-bg ya no aplica fondo propio: el body lo provee. Se mantiene la clase
+   para no romper el marcado JSX, pero no sobreescribe ningún color. */
+.corp-bg {
+  /* background heredado del body — no añadir background-color aquí */
+}
+
+/* Tarjetas centradas de Auth (Login, Registro, ChangePass) */
+.corp-auth-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+  margin: 0 auto;
+}
+
+/* Layouts utilitarios */
+.corp-flex-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Tipografía Corporativa */
+.corp-h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a; /* Slate 900 */
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.corp-h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.corp-body {
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569; /* Slate 600 */
+  margin: 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Formularios Generales Corporativos */
+.corp-form-group {
+  margin-bottom: 20px;
+}
+
+.corp-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.corp-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.corp-input-icon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corp-input-icon-right {
+  position: absolute;
+  right: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corp-input-icon-right:hover {
+  color: #475569;
+}
+
+.corp-input, .corp-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.corp-input.with-icon {
+  padding-left: 40px;
+}
+.corp-input.with-icon-right {
+  padding-right: 40px;
+}
+
+.corp-input:focus, .corp-select:focus {
+  border-color: #2563eb; /* Blue 600 */
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.corp-input:disabled, .corp-select:disabled {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Select custom arrow */
+.corp-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+/* Botones Corporativos */
+.corp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  width: 100%;
+  font-family: inherit;
+}
+
+.corp-btn-primary {
+  background-color: #0f172a; /* Institucional Dark Blue */
+  color: #ffffff;
+}
+
+.corp-btn-primary:hover:not(:disabled) {
+  background-color: #1e293b;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.corp-btn-primary:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.corp-btn-outline {
+  background-color: transparent;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.corp-btn-outline:hover:not(:disabled) {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+/* Alertas & Validaciones */
+.corp-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.corp-alert-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+
+.corp-alert-warning {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+}
+
+/* Enlaces y Checkboxes */
+.corp-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.corp-link:hover {
+  text-decoration: underline;
+}
+
+.corp-checkbox-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.corp-checkbox {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.corp-checkbox-label {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* --- MODALES ESTANDARIZADOS (Responsive y Unificados) --- */
+.corp-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px; /* Márgenes mínimos en mobile */
+  animation: fadeInModal 0.2s ease-out forwards;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUpModal {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.corp-modal-card {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 440px; /* Por defecto confirmaciones */
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  text-align: left; /* Textos alineados a la izquierda por defecto */
+  overflow: hidden;
+  animation: scaleUpModal 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  display: flex;
+  flex-direction: column;
+}
+
+.corp-modal-card.large {
+  max-width: 600px; /* Para modales con formularios anchos */
+}
+
+.corp-modal-header {
+  padding: 24px 24px 16px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.corp-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.corp-modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.corp-modal-close:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.corp-modal-body {
+  padding: 0 24px 24px 24px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Footer del modal: no usa color de fondo propio para evitar el efecto
+   de tercera capa de gris. Solo se separa con un borde superior. */
+.corp-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Tablas Responsivas */
+.corp-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Layout Grid para forms (ej. Registro) */
+.corp-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* --- MEDIA QUERIES GLOBALES (Responsividad) --- */
+@media (max-width: 640px) {
+  /* Apilar grids */
+  .corp-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Botones de Footer apilados en Mobile */
+  .corp-modal-footer {
+    flex-direction: column-reverse;
+  }
+  .corp-modal-footer .corp-btn {
+    width: 100%;
+  }
+
+  /* Padding general un poco más compacto */
+  .corp-modal-header { padding: 20px 20px 12px 20px; }
+  .corp-modal-body { padding: 0 20px 20px 20px; }
+  .corp-modal-footer { padding: 16px 20px; }
 }

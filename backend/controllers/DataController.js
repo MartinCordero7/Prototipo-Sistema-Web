@@ -31,12 +31,24 @@ export const submitFormHandler = async (req, res) => {
   try {
     const authDb = await getAuthDb();
     
-    // Calcular hora de Ecuador (GMT-5) explícita
     const ecuadorTime = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Guayaquil"}));
     
     // Formatear a YYYY-MM-DD HH:MM:SS
     const pad = (n) => n.toString().padStart(2, '0');
     const marcaTemporal = `${ecuadorTime.getFullYear()}-${pad(ecuadorTime.getMonth() + 1)}-${pad(ecuadorTime.getDate())} ${pad(ecuadorTime.getHours())}:${pad(ecuadorTime.getMinutes())}:${pad(ecuadorTime.getSeconds())}`;
+
+    // Validar si ya existe un registro para ese usuario en esa fecha
+    const existingStock = await authDb.get(
+      'SELECT id FROM stock_diario WHERE correo_usuario = ? AND fecha_stock = ?',
+      [formData.correoUsuario, formData.fecha]
+    );
+
+    if (existingStock) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ya ha reportado el stock para esta fecha. No se permiten registros duplicados.' 
+      });
+    }
 
     // Extraer cantidades por producto
     const getStock = (nombreProd) => {

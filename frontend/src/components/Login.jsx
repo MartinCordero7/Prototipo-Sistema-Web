@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+import {
+  IconUser,
+  IconLock,
+  IconEye,
+  IconEyeOff,
+  IconAlertTriangle
+} from './Icons';
+
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isBlocked, setIsBlocked] = useState(false);
+  
+  // UI state only
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -45,50 +56,77 @@ const Login = () => {
   };
 
   return (
-    <div className="form-card form-card-large" style={{ maxWidth: '520px', margin: '0 auto' }}>
-      <h2 className="form-title">Iniciar Sesión</h2>
-      <form onSubmit={handleLogin}>
-        <div className="form-group">
-          <label>Usuario</label>
-          <input
-            type="text"
-            name="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="form-control"
-            placeholder="Nombre de usuario asignado"
-            required
-          />
+    <div className="corp-bg corp-flex-center">
+      <div className="corp-auth-card">
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h2 className="corp-h1">Iniciar Sesión</h2>
+          <p className="corp-body">Ingrese sus credenciales corporativas</p>
         </div>
-        <div className="form-group" style={{ marginTop: '1rem', marginBottom: '2rem' }}>
-          <label>Contraseña</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="form-control"
-            placeholder="Ingrese su contraseña"
-            required
-          />
+        
+        {error && (
+          <div className="corp-alert corp-alert-error">
+            <IconAlertTriangle />
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin}>
+          <div className="corp-form-group">
+            <label className="corp-label">Usuario</label>
+            <div className="corp-input-wrapper">
+              <div className="corp-input-icon"><IconUser /></div>
+              <input
+                type="text"
+                name="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="corp-input with-icon"
+                placeholder="Nombre de usuario asignado"
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="corp-form-group">
+            <label className="corp-label">Contraseña</label>
+            <div className="corp-input-wrapper">
+              <div className="corp-input-icon"><IconLock /></div>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="corp-input with-icon with-icon-right"
+                placeholder="Ingrese su contraseña"
+                required
+              />
+              <div 
+                className="corp-input-icon-right" 
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <IconEyeOff /> : <IconEye />}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="corp-btn corp-btn-primary"
+            disabled={isBlocked}
+            style={{ marginTop: '24px' }}
+          >
+            {isBlocked ? 'Acceso Denegado' : 'Ingresar al Sistema'}
+          </button>
+        </form>
+
+        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+          <p className="corp-body">
+            ¿No tienes una cuenta?{' '}
+            <Link to="/registro" className="corp-link">
+              Registrate
+            </Link>
+          </p>
         </div>
-        {error && <span className="error-text" style={{ display: 'block', marginTop: '1rem' }}>{error}</span>}
-        <button
-          type="submit"
-          className="btn-submit"
-          disabled={isBlocked}
-          style={{
-            marginTop: '1.5rem',
-            backgroundColor: isBlocked ? '#d1d5db' : 'var(--accent-color)',
-            cursor: isBlocked ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isBlocked ? 'Acceso Denegado' : 'Iniciar Sesión'}
-        </button>
-      </form>
-      <div style={{ textAlign: 'center', marginTop: '2.1rem', fontSize: '0.95rem' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          ¿No tienes una cuenta? <Link to="/registro" style={{ color: 'var(--accent-color)', fontWeight: '600', textDecoration: 'none' }}>Regístrate aquí</Link>
-        </p>
       </div>
     </div>
   );

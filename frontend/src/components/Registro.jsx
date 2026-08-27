@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+import {
+  IconBuilding,
+  IconHash,
+  IconMail,
+  IconCheckCircle,
+  IconAlertTriangle,
+  IconSmallAlert
+} from './Icons';
+
 const COMERCIALIZADORAS = [
   'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
   'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
@@ -140,184 +149,199 @@ const Registro = () => {
   };
 
   return (
-    <div className="form-card form-card-large" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h2 className="form-title">Registro de Cuenta</h2>
-      
-      {errorRegistro && <div className="error-text" style={{ marginBottom: '1rem', textAlign: 'center' }}>{errorRegistro}</div>}
-      
-      <form onSubmit={handleRegister}>
+    <div className="corp-bg corp-flex-center">
+      <div className="corp-auth-card" style={{ maxWidth: '600px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <h2 className="corp-h1">Registro de Estación</h2>
+          <p className="corp-body">Ingrese los datos para generar las credenciales</p>
+        </div>
         
-        <div className="form-group">
-          <label>Comercializadora</label>
-          <select 
-            name="comercializadora" 
-            value={formData.comercializadora} 
-            onChange={handleChange} 
-            className="form-control"
-            required
-          >
-            <option value="">Seleccione una comercializadora...</option>
-            {COMERCIALIZADORAS.map(c => (
-              <option key={c} value={c.toUpperCase()}>{c}</option>
-            ))}
-          </select>
-        </div>
+        {errorRegistro && (
+          <div className="corp-alert corp-alert-error">
+            <IconSmallAlert />
+            {errorRegistro}
+          </div>
+        )}
+        
+        <form onSubmit={handleRegister}>
+          
+          <div className="corp-form-group">
+            <label className="corp-label">Comercializadora</label>
+            <select 
+              name="comercializadora" 
+              value={formData.comercializadora} 
+              onChange={handleChange} 
+              className="corp-select"
+              required
+            >
+              <option value="">Seleccione una comercializadora...</option>
+              {COMERCIALIZADORAS.map(c => (
+                <option key={c} value={c.toUpperCase()}>{c}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="form-group">
-          <label>Centro de Distribución</label>
-          <select 
-            name="centroSeleccionado" 
-            value={formData.centroSeleccionado} 
-            onChange={handleChange} 
-            className="form-control"
-            required
-            disabled={!formData.comercializadora || loadingCentros}
-          >
-            <option value="">
-              {loadingCentros ? `Cargando centros de distribución asociados a ${formData.comercializadora}...` : 'Seleccione el centro de distribución...'}
-            </option>
-            {centrosDisponibles.map(centro => (
-              <option key={centro.id} value={centro.id}>
-                {centro.nombre}
+          <div className="corp-form-group">
+            <label className="corp-label">Centro de Distribución</label>
+            <select 
+              name="centroSeleccionado" 
+              value={formData.centroSeleccionado} 
+              onChange={handleChange} 
+              className="corp-select"
+              required
+              disabled={!formData.comercializadora || loadingCentros}
+            >
+              <option value="">
+                {loadingCentros ? `Cargando centros asociados a ${formData.comercializadora}...` : 'Seleccione el centro de distribución...'}
               </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div className="form-group">
-            <label>Código ARCH</label>
-            <input 
-              type="text" 
-              name="codigoArch"
-              value={formData.codigoArch}
-              className="form-control"
-              placeholder="Autocompletado"
-              disabled
-              style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
-            />
+              {centrosDisponibles.map(centro => (
+                <option key={centro.id} value={centro.id}>
+                  {centro.nombre}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="form-group">
-            <label>Código Único</label>
-            <input 
-              type="text" 
-              name="codigoUnico"
-              value={formData.codigoUnico}
-              className="form-control"
-              placeholder="Autocompletado"
-              disabled
-              style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Correo Electrónico</label>
-          <input 
-            type="email" 
-            name="correo"
-            value={formData.correo}
-            onChange={handleChange}
-            className="form-control"
-            placeholder="ej. contacto@empresa.com"
-            required
-          />
-        </div>
-        <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
-          <input 
-            type="checkbox" 
-            id="aceptaCorreos" 
-            checked={aceptaCorreos}
-            onChange={handleCheckboxChange}
-            required
-            style={{ width: 'auto', cursor: 'pointer', margin: 0 }}
-          />
-          <label htmlFor="aceptaCorreos" style={{ margin: 0, fontSize: '0.95rem', cursor: 'pointer', fontWeight: '600', color: 'var(--accent-color)', display: 'inline-block' }}>
-            Acepto condiciones
-          </label>
-        </div>
-
-        <button type="submit" className="btn-submit" disabled={loadingRegistro || !formData.centroSeleccionado || !aceptaCorreos}>
-          {loadingRegistro ? 'Registrando...' : 'Crear Cuenta'}
-        </button>
-      </form>
-      
-      <div style={{ textAlign: 'center', marginTop: '2.1rem', fontSize: '0.95rem' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          ¿Ya tienes cuenta? <Link to="/login" style={{ color: 'var(--accent-color)', fontWeight: '600', textDecoration: 'none' }}>Inicia sesión aquí</Link>
-        </p>
-      </div>
-
-      {showCondiciones && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, backdropFilter: 'blur(4px)'
-        }}>
-          <div style={{
-            background: 'white', padding: '2rem', borderRadius: '12px',
-            maxWidth: '400px', width: '90%', textAlign: 'center',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ marginTop: 0, color: 'var(--accent-color)' }}>Términos y Condiciones</h3>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-              Acepta que el correo ingresado será el único al que se enviará notificaciones, avisos y alertas del sistema.
-            </p>
-            <button 
-              onClick={() => setShowCondiciones(false)}
-              className="btn-submit"
-              style={{ marginTop: '1.5rem', width: '100%' }}
-            >
-              Entendido
-            </button>
-          </div>
-        </div>
-      )}
-      {/* MODAL CUSTOM ALERT (Reemplazo del alert nativo) */}
-      {customAlert.show && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 10000, backdropFilter: 'blur(5px)'
-        }}>
-          <div style={{
-            background: 'white', padding: '2.5rem 2rem', borderRadius: '16px',
-            maxWidth: '400px', width: '90%', textAlign: 'center',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            borderTop: `6px solid ${customAlert.type === 'success' ? '#10b981' : '#ef4444'}`
-          }}>
-            <div style={{ 
-              fontSize: '3rem', 
-              marginBottom: '1rem',
-              color: customAlert.type === 'success' ? '#10b981' : '#ef4444'
-            }}>
-              {customAlert.type === 'success' ? '✅' : '❌'}
+          <div className="corp-grid-2">
+            <div className="corp-form-group">
+              <label className="corp-label">Código ARCH</label>
+              <div className="corp-input-wrapper">
+                <div className="corp-input-icon"><IconHash /></div>
+                <input 
+                  type="text" 
+                  name="codigoArch"
+                  value={formData.codigoArch}
+                  className="corp-input with-icon"
+                  placeholder="Autocompletado"
+                  disabled
+                />
+              </div>
             </div>
-            <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937', fontSize: '1.5rem', fontWeight: 'bold' }}>
-              {customAlert.title}
-            </h2>
-            <p style={{ color: '#4b5563', marginBottom: '2rem', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              {customAlert.message}
-            </p>
-            <button 
-              onClick={() => setCustomAlert({ ...customAlert, show: false })}
-              style={{
-                backgroundColor: customAlert.type === 'success' ? '#10b981' : '#ef4444',
-                color: 'white', border: 'none', padding: '0.75rem 2rem',
-                borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold',
-                cursor: 'pointer', width: '100%', transition: 'background-color 0.2s'
-              }}
-            >
-              Aceptar
-            </button>
+
+            <div className="corp-form-group">
+              <label className="corp-label">Código Único</label>
+              <div className="corp-input-wrapper">
+                <div className="corp-input-icon"><IconHash /></div>
+                <input 
+                  type="text" 
+                  name="codigoUnico"
+                  value={formData.codigoUnico}
+                  className="corp-input with-icon"
+                  placeholder="Autocompletado"
+                  disabled
+                />
+              </div>
+            </div>
           </div>
+
+          <div className="corp-form-group">
+            <label className="corp-label">Correo Electrónico Oficial</label>
+            <div className="corp-input-wrapper">
+              <div className="corp-input-icon"><IconMail /></div>
+              <input 
+                type="email" 
+                name="correo"
+                value={formData.correo}
+                onChange={handleChange}
+                className="corp-input with-icon"
+                placeholder="ej. contacto@estacion.com"
+                required
+              />
+            </div>
+          </div>
+          
+          <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0' }} />
+
+          <div className="corp-checkbox-wrapper" style={{ justifyContent: 'center', marginBottom: '24px' }}>
+            <input 
+              type="checkbox" 
+              id="aceptaCorreos" 
+              checked={aceptaCorreos}
+              onChange={handleCheckboxChange}
+              required
+              className="corp-checkbox"
+            />
+            <label htmlFor="aceptaCorreos" className="corp-checkbox-label">
+              Acepto condiciones de notificaciones
+            </label>
+          </div>
+
+          <button 
+            type="submit" 
+            className="corp-btn corp-btn-primary" 
+            disabled={loadingRegistro || !formData.centroSeleccionado || !aceptaCorreos}
+          >
+            {loadingRegistro ? 'Registrando...' : 'Crear Cuenta'}
+          </button>
+        </form>
+        
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <p className="corp-body">
+            ¿Ya tienes cuenta? <Link to="/login" className="corp-link">Inicia sesión aquí</Link>
+          </p>
         </div>
-      )}
+
+        {/* Modal de Condiciones */}
+        {showCondiciones && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title">Términos y Condiciones</h3>
+                <button onClick={() => setShowCondiciones(false)} className="corp-modal-close">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>
+                  Acepta que el correo ingresado será el único al que se enviará notificaciones, avisos y alertas del sistema.
+                </p>
+              </div>
+              <div className="corp-modal-footer">
+                <button 
+                  onClick={() => setShowCondiciones(false)}
+                  className="corp-btn corp-btn-primary"
+                  style={{ width: 'auto' }}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal de Feedback */}
+        {customAlert.show && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title">
+                  <span style={{ color: customAlert.type === 'success' ? '#16a34a' : '#dc2626' }}>
+                    {customAlert.type === 'success' ? <IconCheckCircle /> : <IconAlertTriangle />}
+                  </span>
+                  {customAlert.title}
+                </h3>
+                <button onClick={() => setCustomAlert({ ...customAlert, show: false })} className="corp-modal-close">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>
+                  {customAlert.message}
+                </p>
+              </div>
+              <div className="corp-modal-footer">
+                <button 
+                  onClick={() => setCustomAlert({ ...customAlert, show: false })}
+                  className="corp-btn corp-btn-primary"
+                  style={{ backgroundColor: customAlert.type === 'success' ? '#16a34a' : '#dc2626', width: 'auto' }}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

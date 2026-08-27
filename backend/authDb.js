@@ -8,7 +8,13 @@ const __dirname = path.dirname(__filename);
 
 const dbPath = path.join(__dirname, 'usuarios.sqlite');
 
+let dbInstance = null;
+
 export const getAuthDb = async () => {
+  if (dbInstance) {
+    return dbInstance;
+  }
+
   const db = await open({
     filename: dbPath,
     driver: sqlite3.Database
@@ -29,10 +35,6 @@ export const getAuthDb = async () => {
       llave TEXT PRIMARY KEY,
       valor TEXT NOT NULL
     );
-  `);
-
-  await db.exec(`
-    DROP TABLE IF EXISTS stock_diario;
   `);
 
   await db.exec(`
@@ -66,30 +68,28 @@ export const getAuthDb = async () => {
     VALUES ('hora_cierre', '12')
   `);
 
-  // Intentamos agregar las columnas de seguridad si no existen.
-  // SQLite arrojará error si la columna ya existe, por eso usamos try/catch individual.
   try {
     await db.exec(`ALTER TABLE usuarios ADD COLUMN intentos_fallidos INTEGER DEFAULT 0;`);
   } catch (error) {
-    // La columna ya existe, no hacemos nada
+    // Ya existe
   }
 
   try {
     await db.exec(`ALTER TABLE usuarios ADD COLUMN bloqueado_hasta TEXT DEFAULT NULL;`);
   } catch (error) {
-    // La columna ya existe, no hacemos nada
+    // Ya existe
   }
 
   try {
     await db.exec(`ALTER TABLE usuarios ADD COLUMN correo TEXT DEFAULT NULL;`);
   } catch (error) {
-    // La columna ya existe, no hacemos nada
+    // Ya existe
   }
 
   try {
     await db.exec(`ALTER TABLE usuarios ADD COLUMN cambio_clave_pendiente INTEGER DEFAULT 1;`);
   } catch (error) {
-    // La columna ya existe, no hacemos nada
+    // Ya existe
   }
 
   // Insertar usuario administrador si no existe
@@ -98,18 +98,16 @@ export const getAuthDb = async () => {
     VALUES ('admin_id', 'admin_arch', 'admin123', 'ADMINISTRADOR SISTEMA', 'ADMINISTRADOR', 0, NULL, 0)
   `);
 
-  // Asegurarnos de que el administrador existente NO tenga cambio pendiente
   await db.run(`
     UPDATE usuarios SET cambio_clave_pendiente = 0 WHERE username = 'admin_arch'
   `);
 
-  // Insertar usuario de prueba didáctico
+  // Insertar usuario de prueba
   await db.run(`
     INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
     VALUES ('test_id', 'test_user', 'password123', 'ESTACION DE PRUEBA', 'TERPEL', 0, NULL, 1)
   `);
 
-  // Crear cuentas maestras para los 19 sujetos de control (Auditores)
   const COMERCIALIZADORAS = [
     'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
     'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
@@ -126,5 +124,7 @@ export const getAuthDb = async () => {
     `, [id, username, 'auditor123', 'AUDITORIA', org.toUpperCase()]);
   }
 
-  return db;
+  dbInstance = db;
+  return dbInstance;
 };
+

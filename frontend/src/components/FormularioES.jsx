@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Joyride, STATUS } from 'react-joyride';
 
+// --- Iconos SVG (Corporativos) ---
+import {
+  IconSettings,
+  IconCheckCircle,
+  IconAlertTriangle,
+  IconInfo,
+  IconX,
+  IconLock
+} from './Icons';
+
 const PRODUCTOS_DISPONIBLES = [
   'Diésel Premium',
   'Gasolina Extra',
@@ -51,6 +61,49 @@ const FormularioES = () => {
 
   const [errors, setErrors] = useState({});
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+
+  // Estados de Sincronización de Reloj
+  const [horaCierre, setHoraCierre] = useState(12);
+  const [isClosed, setIsClosed] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  // 1. Obtener la hora de cierre desde el servidor al cargar
+  useEffect(() => {
+    fetch('http://localhost:3000/api/auth/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setHoraCierre(data.horaCierre);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // 2. Loop del Timer (1 segundo)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      
+      if (currentHour >= horaCierre) {
+        setIsClosed(true);
+        setTimeLeft('Cerrado por hoy');
+      } else {
+        setIsClosed(false);
+        const limitTime = new Date();
+        limitTime.setHours(horaCierre, 0, 0, 0);
+        
+        const diffMs = limitTime - now;
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+        
+        setTimeLeft(`${diffHrs.toString().padStart(2, '0')}:${diffMins.toString().padStart(2, '0')}:${diffSecs.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [horaCierre]);
 
   // Estados para el Modal de Configuración
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -207,8 +260,11 @@ const FormularioES = () => {
           nombreCentro: userData.nombre_estacion
         })
       })
-      .then(response => response.json())
-      .then(data => {
+      .then(async response => {
+        const data = await response.json();
+        return { status: response.status, data };
+      })
+      .then(({ status, data }) => {
         if (data.success) {
           submittedRecords.push(validationKey);
           localStorage.setItem('submittedRecords', JSON.stringify(submittedRecords));
@@ -223,7 +279,11 @@ const FormularioES = () => {
             aceptaRealidad: false
           });
         } else {
-          setCustomAlert({ show: true, type: 'error', title: 'Error al Guardar', message: data.message });
+          if (status === 400 && data.message.includes('duplicados')) {
+            setShowDuplicateModal(true);
+          } else {
+            setCustomAlert({ show: true, type: 'error', title: 'Error al Guardar', message: data.message });
+          }
         }
       })
       .catch(error => {
@@ -231,11 +291,6 @@ const FormularioES = () => {
         setCustomAlert({ show: true, type: 'error', title: 'Error de Conexión', message: 'No se pudo contactar con el servidor. Revise su conexión.' });
       });
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    navigate('/login');
   };
 
   const handleConfigChange = (e) => {
@@ -300,273 +355,381 @@ const FormularioES = () => {
   if (!localStorage.getItem('isAuthenticated')) return null;
 
   return (
-    <div className="form-card" style={{ maxWidth: '650px', margin: '0 auto' }}>
-      <Joyride 
-        key={tourKey}
-        steps={tourSteps}
-        run={runTour}
-        continuous={true}
-        showProgress={true}
-        showSkipButton={true}
-        callback={handleJoyrideCallback}
-        locale={{
-          back: 'Atrás',
-          close: 'Cerrar',
-          last: 'Terminar',
-          next: 'Siguiente',
-          skip: 'Saltar guía'
-        }}
-        styles={{
-          options: {
-            primaryColor: '#1f315c',
-            zIndex: 10000,
-          }
-        }}
-      />
+    <div className="corp-flex-center">
       
-      <h2 className="form-title">Ingreso Diario de Operaciones</h2>
-      
-      {userData && (
-        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#e9f2ff', borderRadius: '8px', border: '1px solid #b8d4ff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h3 style={{ margin: 0, color: '#1f315c', fontSize: '1.1rem' }}>{userData.nombre_estacion}</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#4a5568', fontSize: '0.9rem' }}>Comercializadora: <strong>{userData.comercializadora}</strong></p>
-          </div>
-          <button 
-            onClick={() => setShowConfigModal(true)}
-            style={{ 
-              background: 'none', border: 'none', color: 'var(--accent-color)', 
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', 
-              fontSize: '0.9rem', fontWeight: '600' 
-            }}
-          >
-            ⚙️ Configuración
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        {/* El centro de distribución ya viene por la sesión (userData.nombre_estacion) */}
-
-        <div className="form-group step-fecha">
-          <label>Fecha y Hora</label>
-          <input 
-            type="datetime-local" 
-            name="fecha"
-            value={formData.fecha}
-            onChange={handleChange}
-            className="form-control"
-            min={minFecha}
-            max={maxFecha}
-          />
-          {errors.fecha && <span className="error-text">{errors.fecha}</span>}
-        </div>
-
-        <div className="form-group step-productos">
-          <label>Productos (Seleccione al menos uno)</label>
-          <div className="checkbox-group">
-            {PRODUCTOS_DISPONIBLES.map(prod => (
-              <div key={prod} className="checkbox-item">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    name="productos"
-                    value={prod}
-                    checked={formData.productosSeleccionados.includes(prod)}
-                    onChange={handleChange}
-                  />
-                  {prod}
-                </label>
-                {formData.productosSeleccionados.includes(prod) && (
-                  <input 
-                    type="text"
-                    placeholder="Stock (ej. 1500)"
-                    value={formData.stocks[prod] || ''}
-                    onChange={(e) => handleStockChange(prod, e.target.value)}
-                    className="stock-input form-control"
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          {errors.productos && <span className="error-text">{errors.productos}</span>}
-          {errors.stocks && <span className="error-text">{errors.stocks}</span>}
-        </div>
-
-        <div className="acceptance-container step-confirmacion">
-          <input 
-            type="checkbox" 
-            name="aceptaRealidad"
-            id="aceptaRealidad"
-            checked={formData.aceptaRealidad}
-            onChange={handleChange}
-          />
-          <label htmlFor="aceptaRealidad">
-            Acepta que los valores registrados corresponden a la realidad operativa.
-          </label>
-        </div>
-        {errors.aceptaRealidad && <span className="error-text">{errors.aceptaRealidad}</span>}
+      <div className="corp-auth-card" style={{ maxWidth: '650px', width: '100%' }}>
+        <Joyride 
+          key={tourKey}
+          steps={tourSteps}
+          run={runTour}
+          continuous={true}
+          showProgress={true}
+          showSkipButton={true}
+          callback={handleJoyrideCallback}
+          locale={{
+            back: 'Atrás',
+            close: 'Cerrar',
+            last: 'Terminar',
+            next: 'Siguiente',
+            skip: 'Saltar guía'
+          }}
+          styles={{
+            options: {
+              primaryColor: '#0f172a',
+              zIndex: 10000,
+            }
+          }}
+        />
         
-        {errors.correo && (
-          <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #f87171', fontWeight: 'bold' }}>
-            ⚠️ {errors.correo}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h2 className="corp-h1">Ingreso Diario de Operaciones</h2>
+          <p className="corp-body">Registro oficial de stock</p>
+        </div>
+        
+        {userData && (
+          <div style={{ 
+            marginBottom: '24px', 
+            padding: '16px', 
+            borderRadius: '8px', 
+            border: '1px solid #e2e8f0', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div>
+              <h3 className="corp-h2" style={{ marginBottom: '4px' }}>{userData.nombre_estacion}</h3>
+              <p className="corp-body" style={{ textAlign: 'left', color: '#64748b' }}>
+                Comercializadora: <strong style={{ color: '#334155' }}>{userData.comercializadora}</strong>
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                backgroundColor: isClosed ? '#fee2e2' : '#f0fdf4',
+                color: isClosed ? '#b91c1c' : '#166534',
+                fontWeight: '600',
+                border: `1px solid ${isClosed ? '#fecaca' : '#bbf7d0'}`
+              }}>
+                {isClosed ? <IconLock /> : <IconClock />}
+                {isClosed ? 'Sistema Cerrado' : `Cierre en: ${timeLeft}`}
+              </div>
+
+              <button 
+                onClick={() => setShowConfigModal(true)}
+                className="corp-btn corp-btn-outline"
+                style={{ width: 'auto', height: '36px', padding: '0 16px', fontSize: '13px' }}
+              >
+                <IconSettings /> Configuración
+              </button>
+            </div>
           </div>
         )}
 
-        <button type="submit" className="btn-submit step-submit">Enviar Datos</button>
-      </form>
-
-      {/* MODAL DE REGISTRO DUPLICADO */}
-      {showDuplicateModal && (
-        <div className="modal-overlay">
-          <div className="modal-content form-card">
-            <h2 className="form-title" style={{ color: 'var(--danger-color)', marginBottom: '1rem', fontSize: '1.5rem' }}>
-              Registro Bloqueado
-            </h2>
-            <p style={{ textAlign: 'center', lineHeight: '1.6', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
-              El stock de ese día <strong>ya fue ingresado</strong>. <br/><br/>
-              En caso de querer hacer alguna corrección, por favor ponerse en contacto con la agencia de regulación.
-            </p>
-            <button 
-              className="btn-submit" 
-              style={{ backgroundColor: 'var(--danger-color)', marginTop: '1rem' }} 
-              onClick={() => setShowDuplicateModal(false)}
-            >
-              Entendido
-            </button>
+        {isClosed && (
+          <div className="corp-alert corp-alert-warning" style={{ marginBottom: '24px', backgroundColor: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' }}>
+            <IconLock />
+            El horario de ingreso de información ha finalizado (Límite: {horaCierre}:00). El formulario está bloqueado.
           </div>
-        </div>
-      )}
+        )}
 
-      {/* BOTÓN FLOTANTE DE AYUDA */}
-      <button 
-        className="btn-help-float" 
-        onClick={() => {
-          setTourKey(prev => prev + 1);
-          setRunTour(true);
-        }}
-      >
-        ¿Necesitas ayuda?
-      </button>
-      {/* Modal de Configuración */}
-      {showConfigModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, backdropFilter: 'blur(4px)'
-        }}>
-          <div style={{
-            background: 'white', padding: '2rem', borderRadius: '12px',
-            maxWidth: '400px', width: '90%',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, color: 'var(--accent-color)' }}>Actualizar Datos</h3>
-              <button 
-                onClick={() => setShowConfigModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#666' }}
-              >×</button>
+        <form onSubmit={handleSubmit}>
+          
+          <div className="corp-form-group step-fecha">
+            <label className="corp-label">Fecha y Hora de la Declaración</label>
+            <input 
+              type="datetime-local" 
+              name="fecha"
+              value={formData.fecha}
+              onChange={handleChange}
+              className="corp-input"
+              min={minFecha}
+              max={maxFecha}
+              disabled={isClosed}
+            />
+            {errors.fecha && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>{errors.fecha}</span>}
+          </div>
+
+          <div className="corp-form-group step-productos">
+            <label className="corp-label" style={{ marginBottom: '12px' }}>Productos (Seleccione al menos uno)</label>
+            
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+              {PRODUCTOS_DISPONIBLES.map((prod, index) => (
+                <div 
+                  key={prod} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '12px 16px', 
+                    backgroundColor: formData.productosSeleccionados.includes(prod) ? '#f8fafc' : '#ffffff',
+                    borderBottom: index < PRODUCTOS_DISPONIBLES.length - 1 ? '1px solid #e2e8f0' : 'none'
+                  }}
+                >
+                  <label className="corp-checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, fontWeight: formData.productosSeleccionados.includes(prod) ? '600' : '400', color: '#0f172a' }}>
+                    <input 
+                      type="checkbox" 
+                      name="productos"
+                      value={prod}
+                      checked={formData.productosSeleccionados.includes(prod)}
+                      onChange={handleChange}
+                      className="corp-checkbox"
+                      style={{ margin: 0 }}
+                      disabled={isClosed}
+                    />
+                    {prod}
+                  </label>
+                  
+                  {formData.productosSeleccionados.includes(prod) && (
+                    <div style={{ width: '160px' }}>
+                      <input 
+                        type="text"
+                        placeholder="Stock (ej. 1500)"
+                        value={formData.stocks[prod] || ''}
+                        onChange={(e) => handleStockChange(prod, e.target.value)}
+                        className="corp-input"
+                        style={{ height: '36px', fontSize: '13px' }}
+                        disabled={isClosed}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-
-            {userData?.correo && (
-              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '6px' }}>
-                <strong>Correo actual registrado:</strong><br/> {userData.correo}
-              </p>
-            )}
-
-            <form onSubmit={handleUpdateProfile}>
-              <div className="form-group">
-                <label>Nuevo Correo Electrónico (opcional)</label>
-                <input 
-                  type="email" 
-                  name="newEmail"
-                  value={configData.newEmail}
-                  onChange={handleConfigChange}
-                  className="form-control"
-                  placeholder="ej. nuevo@empresa.com"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Nueva Contraseña (opcional)</label>
-                <input 
-                  type="password" 
-                  name="newPassword"
-                  value={configData.newPassword}
-                  onChange={handleConfigChange}
-                  className="form-control"
-                  placeholder="Dejar en blanco para no cambiar"
-                />
-              </div>
-
-              <hr style={{ margin: '1.5rem 0', borderTop: '1px solid #e5e7eb' }} />
-
-              <div className="form-group">
-                <label style={{ color: '#dc2626' }}>Contraseña Actual (Obligatoria)</label>
-                <input 
-                  type="password" 
-                  name="currentPassword"
-                  value={configData.currentPassword}
-                  onChange={handleConfigChange}
-                  className="form-control"
-                  placeholder="Ingrese su clave por seguridad"
-                  required
-                />
-              </div>
-
-              {configError && <span className="error-text" style={{ display: 'block', marginBottom: '1rem', textAlign: 'center' }}>{configError}</span>}
-              {configSuccess && <span style={{ display: 'block', marginBottom: '1rem', textAlign: 'center', color: '#16a34a', fontWeight: 'bold' }}>{configSuccess}</span>}
-
-              <button type="submit" className="btn-submit" disabled={configLoading}>
-                {configLoading ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
-            </form>
+            
+            {errors.productos && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '8px', display: 'block', fontWeight: '500' }}>{errors.productos}</span>}
+            {errors.stocks && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>{errors.stocks}</span>}
           </div>
-        </div>
-      )}
-      {/* MODAL CUSTOM ALERT (Reemplazo del alert nativo) */}
-      {customAlert.show && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 10000, backdropFilter: 'blur(5px)'
-        }}>
-          <div style={{
-            background: 'white', padding: '2.5rem 2rem', borderRadius: '16px',
-            maxWidth: '400px', width: '90%', textAlign: 'center',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            borderTop: `6px solid ${customAlert.type === 'success' ? '#10b981' : '#ef4444'}`
-          }}>
-            <div style={{ 
-              fontSize: '3rem', 
-              marginBottom: '1rem',
-              color: customAlert.type === 'success' ? '#10b981' : '#ef4444'
-            }}>
-              {customAlert.type === 'success' ? '✅' : '❌'}
+
+          <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '32px 0 24px 0' }} />
+
+          <div className="corp-checkbox-wrapper step-confirmacion" style={{ alignItems: 'flex-start' }}>
+            <input 
+              type="checkbox" 
+              name="aceptaRealidad"
+              id="aceptaRealidad"
+              checked={formData.aceptaRealidad}
+              onChange={handleChange}
+              className="corp-checkbox"
+              style={{ marginTop: '3px' }}
+              disabled={isClosed}
+            />
+            <label htmlFor="aceptaRealidad" className="corp-checkbox-label" style={{ fontWeight: '500', color: '#1e293b' }}>
+              Declaro bajo juramento que los valores de stock registrados corresponden a la realidad operativa del centro de distribución.
+            </label>
+          </div>
+          {errors.aceptaRealidad && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>{errors.aceptaRealidad}</span>}
+          
+          {errors.correo && (
+            <div className="corp-alert corp-alert-warning" style={{ marginTop: '16px' }}>
+              <IconAlertTriangle />
+              {errors.correo}
             </div>
-            <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937', fontSize: '1.5rem', fontWeight: 'bold' }}>
-              {customAlert.title}
-            </h2>
-            <p style={{ color: '#4b5563', marginBottom: '2rem', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              {customAlert.message}
-            </p>
-            <button 
-              onClick={() => setCustomAlert({ ...customAlert, show: false })}
-              style={{
-                backgroundColor: customAlert.type === 'success' ? '#10b981' : '#ef4444',
-                color: 'white', border: 'none', padding: '0.75rem 2rem',
-                borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold',
-                cursor: 'pointer', width: '100%', transition: 'background-color 0.2s'
-              }}
-            >
-              Aceptar
-            </button>
-          </div>
-        </div>
-      )}
+          )}
 
+          <button 
+            type="submit" 
+            className="corp-btn corp-btn-primary step-submit" 
+            style={{ marginTop: '32px' }}
+            disabled={isClosed}
+          >
+            {isClosed ? 'Sistema Cerrado' : 'Registrar e Informar Datos'}
+          </button>
+        </form>
+
+        {/* MODAL DE REGISTRO DUPLICADO */}
+        {showDuplicateModal && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title">
+                  <span style={{ color: '#dc2626' }}><IconAlertTriangle /></span>
+                  Registro Bloqueado
+                </h3>
+                <button onClick={() => setShowDuplicateModal(false)} className="corp-modal-close">
+                  <IconX />
+                </button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: '0 0 16px 0' }}>
+                  El stock de ese día <strong>ya fue ingresado</strong>.
+                </p>
+                <p style={{ margin: 0 }}>
+                  En caso de requerir correcciones en el registro oficial, por favor contacte a la mesa de ayuda de la agencia de regulación.
+                </p>
+              </div>
+              <div className="corp-modal-footer">
+                <button 
+                  className="corp-btn corp-btn-primary" 
+                  style={{ backgroundColor: '#b91c1c', width: 'auto' }} 
+                  onClick={() => setShowDuplicateModal(false)}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BOTÓN FLOTANTE DE AYUDA */}
+        <button 
+          onClick={() => {
+            setTourKey(prev => prev + 1);
+            setRunTour(true);
+          }}
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            right: '32px',
+            backgroundColor: '#0f172a',
+            color: 'white',
+            border: 'none',
+            borderRadius: '9999px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '600',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            zIndex: 999
+          }}
+        >
+          <IconInfo /> ¿Necesitas ayuda?
+        </button>
+
+        {/* Modal de Configuración */}
+        {showConfigModal && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card large">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title">
+                  <IconSettings /> Actualizar Datos
+                </h3>
+                <button onClick={() => setShowConfigModal(false)} className="corp-modal-close">
+                  <IconX />
+                </button>
+              </div>
+
+              <div className="corp-modal-body">
+                {userData?.correo && (
+                  <div style={{ fontSize: '13px', color: '#475569', marginBottom: '24px', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Correo actual registrado:</strong><br/> {userData.correo}
+                  </div>
+                )}
+
+                <form id="form-config" onSubmit={handleUpdateProfile}>
+                  <div className="corp-form-group">
+                    <label className="corp-label">Nuevo Correo Electrónico (opcional)</label>
+                    <input 
+                      type="email" 
+                      name="newEmail"
+                      value={configData.newEmail}
+                      onChange={handleConfigChange}
+                      className="corp-input"
+                      placeholder="ej. nuevo@empresa.com"
+                    />
+                  </div>
+
+                  <div className="corp-form-group">
+                    <label className="corp-label">Nueva Contraseña (opcional)</label>
+                    <input 
+                      type="password" 
+                      name="newPassword"
+                      value={configData.newPassword}
+                      onChange={handleConfigChange}
+                      className="corp-input"
+                      placeholder="Dejar en blanco para no cambiar"
+                    />
+                  </div>
+
+                  <hr style={{ margin: '24px 0', borderTop: '1px solid #e2e8f0' }} />
+
+                  <div className="corp-form-group" style={{ marginBottom: 0 }}>
+                    <label className="corp-label" style={{ color: '#b91c1c' }}>Contraseña Actual (Obligatoria)</label>
+                    <div className="corp-input-wrapper">
+                      <div className="corp-input-icon"><IconLock /></div>
+                      <input 
+                        type="password" 
+                        name="currentPassword"
+                        value={configData.currentPassword}
+                        onChange={handleConfigChange}
+                        className="corp-input with-icon"
+                        placeholder="Ingrese su clave por seguridad"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {configError && <span style={{ color: '#dc2626', fontSize: '13px', display: 'block', marginTop: '16px', textAlign: 'center', fontWeight: '500' }}>{configError}</span>}
+                  {configSuccess && <span style={{ display: 'block', marginTop: '16px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>{configSuccess}</span>}
+                </form>
+              </div>
+
+              <div className="corp-modal-footer">
+                <button 
+                  type="button" 
+                  onClick={() => setShowConfigModal(false)}
+                  className="corp-btn corp-btn-outline"
+                  style={{ width: 'auto' }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  form="form-config"
+                  type="submit" 
+                  className="corp-btn corp-btn-primary" 
+                  disabled={configLoading}
+                  style={{ width: 'auto' }}
+                >
+                  {configLoading ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL CUSTOM ALERT (Feedback) */}
+        {customAlert.show && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title">
+                  <span style={{ color: customAlert.type === 'success' ? '#16a34a' : '#dc2626' }}>
+                    {customAlert.type === 'success' ? <IconCheckCircle /> : <IconAlertTriangle />}
+                  </span>
+                  {customAlert.title}
+                </h3>
+                <button onClick={() => setCustomAlert({ ...customAlert, show: false })} className="corp-modal-close">
+                  <IconX />
+                </button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>
+                  {customAlert.message}
+                </p>
+              </div>
+              <div className="corp-modal-footer">
+                <button 
+                  onClick={() => setCustomAlert({ ...customAlert, show: false })}
+                  className="corp-btn corp-btn-primary"
+                  style={{ backgroundColor: customAlert.type === 'success' ? '#16a34a' : '#dc2626', width: 'auto' }}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };
