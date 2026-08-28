@@ -40,7 +40,7 @@ const Registro = () => {
   useEffect(() => {
     if (formData.comercializadora) {
       setLoadingCentros(true);
-      fetch(`http://localhost:3000/api/centros?comercializadora=${formData.comercializadora}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/centros?comercializadora=${formData.comercializadora}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -118,7 +118,7 @@ const Registro = () => {
     setErrorRegistro('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

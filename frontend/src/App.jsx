@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import Login from './components/Login'
 import Registro from './components/Registro'
 import FormularioES from './components/FormularioES'
+import RecuperarPassword from './components/RecuperarPassword'
 import ConfidencialidadModal from './components/ConfidencialidadModal'
 import ChangePassword from './components/ChangePassword'
 import AdminDashboard from './components/AdminDashboard'
@@ -57,6 +58,7 @@ function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
+            <Route path="/recuperar" element={<RecuperarPassword />} />
             <Route path="/formulario" element={<FormularioES />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />

@@ -4,14 +4,16 @@ import { Joyride, STATUS } from 'react-joyride';
 
 // --- Iconos SVG (Corporativos) ---
 import {
-  IconSettings,
-  IconCheckCircle,
-  IconAlertTriangle,
   IconInfo,
-  IconX,
   IconLock,
-  IconClock
+  IconClock,
+  IconCheckCircle,
+  IconX,
+  IconAlertTriangle,
+  IconSettings
 } from './Icons';
+import ConfigModal from './ConfigModal';
+import HistorialEstacion from './HistorialEstacion';
 
 const PRODUCTOS_DISPONIBLES = [
   'Diésel Premium',
@@ -51,6 +53,9 @@ const FormularioES = () => {
     }
   }, [navigate]);
 
+  // Tabs
+  const [activeTab, setActiveTab] = useState('formulario');
+
   // Form State
   const [formData, setFormData] = useState({
     centroId: '',
@@ -70,7 +75,7 @@ const FormularioES = () => {
 
   // 1. Obtener la hora de cierre desde el servidor al cargar
   useEffect(() => {
-    fetch('http://localhost:3000/api/auth/config')
+    fetch(`${import.meta.env.VITE_API_URL}/api/auth/config`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -108,14 +113,6 @@ const FormularioES = () => {
 
   // Estados para el Modal de Configuración
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [configData, setConfigData] = useState({
-    newEmail: '',
-    newPassword: '',
-    currentPassword: ''
-  });
-  const [configLoading, setConfigLoading] = useState(false);
-  const [configError, setConfigError] = useState('');
-  const [configSuccess, setConfigSuccess] = useState('');
   
   const [customAlert, setCustomAlert] = useState({ show: false, type: 'success', title: '', message: '' });
   
@@ -250,10 +247,11 @@ const FormularioES = () => {
       const submittedRecords = JSON.parse(localStorage.getItem('submittedRecords') || '[]');
       
       // Armar la petición al backend
-      fetch('http://localhost:3000/api/submit', {
+      fetch(`${import.meta.env.VITE_API_URL}/api/submit`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           ...formData,
@@ -291,64 +289,6 @@ const FormularioES = () => {
         console.error('Error enviando formulario:', error);
         setCustomAlert({ show: true, type: 'error', title: 'Error de Conexión', message: 'No se pudo contactar con el servidor. Revise su conexión.' });
       });
-    }
-  };
-
-  const handleConfigChange = (e) => {
-    setConfigData({
-      ...configData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setConfigError('');
-    setConfigSuccess('');
-
-    if (!configData.currentPassword) {
-      setConfigError('Debe ingresar su contraseña actual por seguridad.');
-      return;
-    }
-
-    setConfigLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:3000/api/auth/update-profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: userData.username,
-          currentPassword: configData.currentPassword,
-          newEmail: configData.newEmail,
-          newPassword: configData.newPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setCustomAlert({ show: true, type: 'success', title: '¡Actualizado!', message: data.message });
-        
-        // Actualizar datos locales
-        const updatedUser = { ...userData, correo: data.updatedData.correo };
-        setUserData(updatedUser);
-        localStorage.setItem('userData', JSON.stringify(updatedUser));
-        
-        // Limpiar campos excepto correo si se quiere
-        setConfigData({ newEmail: '', newPassword: '', currentPassword: '' });
-        
-        setTimeout(() => {
-          setShowConfigModal(false);
-        }, 2000);
-      } else {
-        setCustomAlert({ show: true, type: 'error', title: 'Error al Actualizar', message: data.message || 'Error al actualizar.' });
-      }
-    } catch (err) {
-      console.error(err);
-      setCustomAlert({ show: true, type: 'error', title: 'Error de Conexión', message: 'Error de conexión con el servidor.' });
-    } finally {
-      setConfigLoading(false);
     }
   };
 
@@ -401,7 +341,7 @@ const FormularioES = () => {
               border: `1px solid ${isClosed ? '#fecaca' : '#bbf7d0'}`
             }}>
               {isClosed ? <IconLock /> : <IconClock />}
-              {isClosed ? 'Sistema Cerrado' : `La plataforma de ingreso se cerrara en: ${timeLeft}`}
+              {isClosed ? 'Sistema Cerrado' : `La plataforma de ingreso se cerrará en: ${timeLeft}`}
             </div>
           </div>
         </div>
@@ -437,14 +377,55 @@ const FormularioES = () => {
           </div>
         )}
 
-        {isClosed && (
-          <div className="corp-alert corp-alert-warning" style={{ marginBottom: '24px', backgroundColor: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' }}>
-            <IconLock />
-            El horario de ingreso de información ha finalizado (Límite: {horaCierre}:00). El formulario está bloqueado.
-          </div>
+        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '24px' }}>
+          <button 
+            className={`corp-tab ${activeTab === 'formulario' ? 'active' : ''}`}
+            onClick={() => setActiveTab('formulario')}
+            style={{ 
+              padding: '12px 24px', 
+              background: 'transparent', 
+              border: 'none', 
+              borderBottom: activeTab === 'formulario' ? '2px solid #1f315c' : '2px solid transparent',
+              color: activeTab === 'formulario' ? '#1f315c' : '#64748b',
+              fontWeight: activeTab === 'formulario' ? '600' : '400',
+              cursor: 'pointer',
+              fontSize: '15px'
+            }}
+          >
+            Declaración de Stock
+          </button>
+          <button 
+            className={`corp-tab ${activeTab === 'historial' ? 'active' : ''}`}
+            onClick={() => setActiveTab('historial')}
+            style={{ 
+              padding: '12px 24px', 
+              background: 'transparent', 
+              border: 'none', 
+              borderBottom: activeTab === 'historial' ? '2px solid #1f315c' : '2px solid transparent',
+              color: activeTab === 'historial' ? '#1f315c' : '#64748b',
+              fontWeight: activeTab === 'historial' ? '600' : '400',
+              cursor: 'pointer',
+              fontSize: '15px'
+            }}
+          >
+            Mi Historial
+          </button>
+        </div>
+
+        {activeTab === 'historial' && (
+          <HistorialEstacion />
         )}
 
-        <form onSubmit={handleSubmit}>
+        {activeTab === 'formulario' && (
+          <>
+            {isClosed && (
+              <div className="corp-alert corp-alert-warning" style={{ marginBottom: '24px', backgroundColor: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' }}>
+                <IconLock />
+                El horario de ingreso de información ha finalizado (Límite: {horaCierre}:00). El formulario está bloqueado.
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
           
           <div className="corp-form-group step-fecha">
             <label htmlFor="fecha" className="corp-label">Fecha y Hora de la Declaración</label>
@@ -584,8 +565,10 @@ const FormularioES = () => {
             </div>
           </div>
         )}
+        </>
+      )}
 
-        {/* BOTÓN FLOTANTE DE AYUDA */}
+      {/* BOTÓN FLOTANTE DE AYUDA */}
         <button 
           onClick={() => {
             setTourKey(prev => prev + 1);
@@ -614,95 +597,13 @@ const FormularioES = () => {
         </button>
 
         {/* Modal de Configuración */}
-        {showConfigModal && (
-          <div className="corp-modal-overlay">
-            <div className="corp-modal-card large">
-              <div className="corp-modal-header">
-                <h3 className="corp-modal-title">
-                  <IconSettings /> Actualizar Datos
-                </h3>
-                <button onClick={() => setShowConfigModal(false)} className="corp-modal-close">
-                  <IconX />
-                </button>
-              </div>
-
-              <div className="corp-modal-body">
-                {userData?.correo && (
-                  <div style={{ fontSize: '13px', color: '#475569', marginBottom: '24px', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px' }}>
-                    <strong>Correo actual registrado:</strong><br/> {userData.correo}
-                  </div>
-                )}
-
-                <form id="form-config" onSubmit={handleUpdateProfile}>
-                  <div className="corp-form-group">
-                    <label className="corp-label">Nuevo Correo Electrónico (opcional)</label>
-                    <input 
-                      type="email" 
-                      name="newEmail"
-                      value={configData.newEmail}
-                      onChange={handleConfigChange}
-                      className="corp-input"
-                      placeholder="ej. nuevo@empresa.com"
-                    />
-                  </div>
-
-                  <div className="corp-form-group">
-                    <label className="corp-label">Nueva Contraseña (opcional)</label>
-                    <input 
-                      type="password" 
-                      name="newPassword"
-                      value={configData.newPassword}
-                      onChange={handleConfigChange}
-                      className="corp-input"
-                      placeholder="Dejar en blanco para no cambiar"
-                    />
-                  </div>
-
-                  <hr style={{ margin: '24px 0', borderTop: '1px solid #e2e8f0' }} />
-
-                  <div className="corp-form-group" style={{ marginBottom: 0 }}>
-                    <label className="corp-label" style={{ color: '#b91c1c' }}>Contraseña Actual (Obligatoria)</label>
-                    <div className="corp-input-wrapper">
-                      <div className="corp-input-icon"><IconLock /></div>
-                      <input 
-                        type="password" 
-                        name="currentPassword"
-                        value={configData.currentPassword}
-                        onChange={handleConfigChange}
-                        className="corp-input with-icon"
-                        placeholder="Ingrese su clave por seguridad"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {configError && <span style={{ color: '#dc2626', fontSize: '13px', display: 'block', marginTop: '16px', textAlign: 'center', fontWeight: '500' }}>{configError}</span>}
-                  {configSuccess && <span style={{ display: 'block', marginTop: '16px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>{configSuccess}</span>}
-                </form>
-              </div>
-
-              <div className="corp-modal-footer">
-                <button 
-                  type="button" 
-                  onClick={() => setShowConfigModal(false)}
-                  className="corp-btn corp-btn-outline"
-                  style={{ width: 'auto' }}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  form="form-config"
-                  type="submit" 
-                  className="corp-btn corp-btn-primary" 
-                  disabled={configLoading}
-                  style={{ width: 'auto' }}
-                >
-                  {configLoading ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfigModal 
+          isOpen={showConfigModal} 
+          onClose={() => setShowConfigModal(false)}
+          userData={userData}
+          setUserData={setUserData}
+          setCustomAlert={setCustomAlert}
+        />
 
         {/* MODAL CUSTOM ALERT (Feedback) */}
         {customAlert.show && (

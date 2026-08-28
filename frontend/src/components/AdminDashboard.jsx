@@ -12,10 +12,13 @@ import {
   IconUnlock,
   IconClose,
   IconInbox,
-  IconInfo,
   IconBuilding,
-  IconUser
+  IconUser,
+  IconSettings,
+  IconInfo
 } from './Icons';
+
+import ConfigModal from './ConfigModal';
 
 const TABS = [
   { id: 'horarios', label: 'Horarios del Sistema', icon: <IconClock />, stepClass: 'step-nav-horarios' },
@@ -42,6 +45,11 @@ const AdminDashboard = () => {
   const [configSuccess, setConfigSuccess] = useState('');
   const [unlockTarget, setUnlockTarget]   = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Perfil / Config
+  const [userData, setUserData] = useState(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ show: false, type: 'info', title: '', message: '' });
   
   // Auditoria
   const [comercializadoraAuditor, setComercializadoraAuditor] = useState('');
@@ -95,33 +103,34 @@ const AdminDashboard = () => {
     if (!isAuth || !userStr) { navigate('/'); return; }
     const user = JSON.parse(userStr);
     if (user.comercializadora !== 'ADMINISTRADOR') { navigate('/formulario'); return; }
+    setUserData(user);
     fetchBlockedUsers(); fetchConfig(); fetchAlertasHistory();
   }, [navigate]);
 
   const fetchAlertasHistory = async () => {
-    try { setLoading(true); const r = await fetch('http://localhost:3000/api/admin/alertas'); const d = await r.json(); if (d.success) setAlertasHistory(d.data); }
+    try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/alertas`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setAlertasHistory(d.data); }
     catch (e) { console.error(e); } finally { setLoading(false); }
   };
   const fetchConfig = async () => {
-    try { const r = await fetch('http://localhost:3000/api/admin/config'); const d = await r.json(); if (d.success) setHoraCierre(d.horaCierre); }
+    try { const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setHoraCierre(d.horaCierre); }
     catch (e) { console.error(e); }
   };
   const handleUpdateConfig = async () => {
     try {
       setUpdatingConfig(true); setConfigSuccess(''); setError('');
-      const r = await fetch('http://localhost:3000/api/admin/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ horaCierre: parseInt(horaCierre, 10) }) });
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/config`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ horaCierre: parseInt(horaCierre, 10) }) });
       const d = await r.json();
       if (d.success) { setConfigSuccess(d.message); setTimeout(() => setConfigSuccess(''), 3000); } else setError(d.message || 'Error actualizando horario.');
     } catch (e) { setError('Error al conectar.'); } finally { setUpdatingConfig(false); }
   };
   const fetchBlockedUsers = async () => {
-    try { setLoading(true); const r = await fetch('http://localhost:3000/api/admin/blocked-users'); const d = await r.json(); if (d.success) setBlockedUsers(d.data); else setError(d.message || 'Error.'); }
+    try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/blocked-users`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setBlockedUsers(d.data); else setError(d.message || 'Error.'); }
     catch (e) { setError('Error al conectar.'); } finally { setLoading(false); }
   };
   const confirmUnblock = async () => {
     if (!unlockTarget) return;
     try {
-      const r = await fetch('http://localhost:3000/api/admin/unblock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: unlockTarget }) });
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/unblock`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ username: unlockTarget }) });
       const d = await r.json();
       if (d.success) { setSuccessMessage(d.message); setUnlockTarget(null); fetchBlockedUsers(); }
       else { setError(d.message || 'Error.'); setUnlockTarget(null); }
@@ -136,7 +145,7 @@ const AdminDashboard = () => {
     try {
       setLoadingAuditores(true);
       setError('');
-      const r = await fetch(`http://localhost:3000/api/admin/estaciones-registradas?comercializadora=${comercializadora}`);
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/estaciones-registradas?comercializadora=${comercializadora}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       const d = await r.json();
       if (d.success) setEstacionesRegistradas(d.data);
       else setError(d.message || 'Error obteniendo estaciones.');
@@ -156,9 +165,9 @@ const AdminDashboard = () => {
   const handleDesignarAuditor = async (idUsuario) => {
     try {
       setLoadingAuditores(true);
-      const r = await fetch('http://localhost:3000/api/admin/asignar-auditor', {
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/asignar-auditor`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ idUsuario, comercializadora: comercializadoraAuditor })
       });
       const d = await r.json();
@@ -580,6 +589,17 @@ const AdminDashboard = () => {
             </button>
           ))}
         </nav>
+
+        <div style={{ marginTop: 'auto', paddingTop: '24px' }}>
+          <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '0 0 16px 0' }} />
+          <p style={{ margin: '0 0 8px 0', padding: '0 4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>Cuenta</p>
+          <button 
+            className="adm-nav-btn" 
+            onClick={() => setShowConfigModal(true)}
+          >
+            <IconSettings /> Configuración
+          </button>
+        </div>
       </aside>
 
       {/* ── Área principal ────────────────────────────────────────────────────── */}
@@ -641,6 +661,41 @@ const AdminDashboard = () => {
         >
           <IconInfo /> ¿Necesitas ayuda?
         </button>
+        <ConfigModal 
+          isOpen={showConfigModal} 
+          onClose={() => setShowConfigModal(false)}
+          userData={userData}
+          setUserData={setUserData}
+          setCustomAlert={setCustomAlert}
+        />
+
+        {/* MODAL CUSTOM ALERT (Feedback de configuración) */}
+        {customAlert.show && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title">
+                  {customAlert.type === 'error' && <span style={{ color: '#dc2626' }}><IconWarn /></span>}
+                  {customAlert.type === 'success' && <span style={{ color: '#16a34a' }}><IconCheck /></span>}
+                  {customAlert.title}
+                </h3>
+                <button onClick={() => setCustomAlert({ show: false, type: 'info', title: '', message: '' })} className="corp-modal-close"><IconClose /></button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>{customAlert.message}</p>
+              </div>
+              <div className="corp-modal-footer">
+                <button 
+                  onClick={() => setCustomAlert({ show: false, type: 'info', title: '', message: '' })} 
+                  className="corp-btn corp-btn-primary" 
+                  style={{ width: 'auto', backgroundColor: customAlert.type === 'error' ? '#dc2626' : '#16a34a' }}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

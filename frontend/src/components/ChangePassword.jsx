@@ -70,9 +70,9 @@ const ChangePassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/change-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/change-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({
           username: userData.username,
           oldPassword: formData.oldPassword,

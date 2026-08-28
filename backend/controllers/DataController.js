@@ -102,3 +102,26 @@ export const submitFormHandler = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error interno del servidor al guardar.' });
   }
 };
+export const getHistoryHandler = async (req, res) => {
+  try {
+    const authDb = await getAuthDb();
+    const user = req.user; // Provisto por authMiddleware
+    
+    // Obtenemos el correo real de la base de datos para este usuario
+    const userData = await authDb.get('SELECT correo FROM usuarios WHERE username = ?', [user.username]);
+    
+    if (!userData || !userData.correo) {
+      return res.status(400).json({ success: false, message: 'Usuario sin correo asociado.' });
+    }
+
+    const rows = await authDb.all(
+      'SELECT * FROM stock_diario WHERE correo_usuario = ? ORDER BY fecha_stock DESC LIMIT 30',
+      [userData.correo]
+    );
+
+    return res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Error al obtener historial:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+};

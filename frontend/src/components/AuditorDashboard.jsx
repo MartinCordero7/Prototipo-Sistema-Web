@@ -12,8 +12,14 @@ import {
   IconDownload,
   IconChevronUp,
   IconChevronDown,
-  IconInfo
+  IconInfo,
+  IconSettings,
+  IconX,
+  IconWarn,
+  IconCheck
 } from './Icons';
+
+import ConfigModal from './ConfigModal';
 
 const AuditorDashboard = () => {
   const navigate = useNavigate();
@@ -28,6 +34,11 @@ const AuditorDashboard = () => {
   
   // Stock modal state
   const [selectedStockStation, setSelectedStockStation] = useState(null);
+
+  // Perfil / Config
+  const [userData, setUserData] = useState(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ show: false, type: 'info', title: '', message: '' });
   
   // Estados de Filtro y Búsqueda
   const tzoffset = (new Date()).getTimezoneOffset() * 60000;
@@ -96,6 +107,7 @@ const AuditorDashboard = () => {
       return;
     }
 
+    setUserData(user);
     setComercializadora(user.comercializadora);
     fetchData(user.comercializadora, fechaDesde, fechaHasta);
   }, [navigate, fechaDesde, fechaHasta]);
@@ -103,8 +115,8 @@ const AuditorDashboard = () => {
   const fetchData = async (comercializadoraName, desde, hasta) => {
     try {
       setLoading(true);
-      const url = `http://localhost:3000/api/auditor/estado-diario?comercializadora=${encodeURIComponent(comercializadoraName)}&fechaDesde=${desde}&fechaHasta=${hasta}`;
-      const response = await fetch(url);
+      const url = `${import.meta.env.VITE_API_URL}/api/auditor/estado-diario?comercializadora=${encodeURIComponent(comercializadoraName)}&fechaDesde=${desde}&fechaHasta=${hasta}`;
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       const data = await response.json();
       
       if (data.success) {
@@ -420,9 +432,48 @@ const AuditorDashboard = () => {
               Última actualización: {ultimaActualizacion.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
+          <button className="corp-btn corp-btn-outline" onClick={() => setShowConfigModal(true)} style={{ backgroundColor: 'white' }}>
+            <IconSettings /> Configuración
+          </button>
           <button className="corp-btn corp-btn-outline" onClick={() => fetchData(comercializadora, fechaDesde, fechaHasta)}>
             <IconRefresh /> Actualizar Datos
           </button>
+
+          <ConfigModal 
+            isOpen={showConfigModal} 
+            onClose={() => setShowConfigModal(false)}
+            userData={userData}
+            setUserData={setUserData}
+            setCustomAlert={setCustomAlert}
+          />
+
+          {/* MODAL CUSTOM ALERT (Feedback de configuración) */}
+          {customAlert.show && (
+            <div className="corp-modal-overlay">
+              <div className="corp-modal-card">
+                <div className="corp-modal-header">
+                  <h3 className="corp-modal-title">
+                    {customAlert.type === 'error' && <span style={{ color: '#dc2626' }}><IconWarn /></span>}
+                    {customAlert.type === 'success' && <span style={{ color: '#16a34a' }}><IconCheck /></span>}
+                    {customAlert.title}
+                  </h3>
+                  <button onClick={() => setCustomAlert({ show: false, type: 'info', title: '', message: '' })} className="corp-modal-close"><IconX /></button>
+                </div>
+                <div className="corp-modal-body">
+                  <p style={{ margin: 0 }}>{customAlert.message}</p>
+                </div>
+                <div className="corp-modal-footer">
+                  <button 
+                    onClick={() => setCustomAlert({ show: false, type: 'info', title: '', message: '' })} 
+                    className="corp-btn corp-btn-primary" 
+                    style={{ width: 'auto', backgroundColor: customAlert.type === 'error' ? '#dc2626' : '#16a34a' }}
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

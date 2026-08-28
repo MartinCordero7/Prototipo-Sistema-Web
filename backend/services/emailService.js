@@ -197,3 +197,64 @@ export const enviarAlertaIncumplimiento = async (correo, nombreComercializadora,
     throw error;
   }
 };
+
+export const enviarCodigoRecuperacion = async (destinatario, codigo, username) => {
+  try {
+    const htmlTemplate = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="margin: 0; padding: 20px; background-color: #f3f4f6;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+          <div style="background-color: #1f315c; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Recuperaci&oacute;n de Contrase&ntilde;a</h1>
+          </div>
+          <div style="padding: 30px; background-color: #ffffff;">
+            <h2 style="color: #111827; font-size: 20px;">Hola, ${username}</h2>
+            <p style="color: #4b5563; line-height: 1.6;">Hemos recibido una solicitud para restablecer la contrase&ntilde;a de tu cuenta en la plataforma de control de stock de la ARCH.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 14px;">Tu c&oacute;digo de recuperaci&oacute;n es:</p>
+              <h1 style="margin: 5px 0; font-size: 32px; letter-spacing: 5px; color: #1f315c;">${codigo}</h1>
+            </div>
+
+            <p style="color: #4b5563; line-height: 1.6;">Este c&oacute;digo es v&aacute;lido por <strong>15 minutos</strong>. Ingr&eacute;salo en la aplicaci&oacute;n junto con tu nueva contrase&ntilde;a para recuperar el acceso.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
+            
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: left; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563;">
+              <p style="margin: 0 0 5px 0;">Saludos cordiales,</p>
+              <p style="margin: 0 0 2px 0; color: #111827;"><strong>Agencia de Regulaci&oacute;n y Control de Hidrocarburos</strong></p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: `"ARCH Soporte" <${process.env.SMTP_USER || 'no-reply@controlhidrocarburos.gob.ec'}>`,
+      to: destinatario,
+      subject: 'Código de Recuperación de Contraseña',
+      html: htmlTemplate
+    };
+
+    if (!process.env.SMTP_PASS) {
+      console.log('----------------------------------------------------');
+      console.log(`AVISO: Simulando correo de recuperacion a: ${destinatario}`);
+      console.log(`Codigo: ${codigo}`);
+      console.log('----------------------------------------------------');
+      return true;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Correo de recuperacion enviado a ${destinatario}: ${info.messageId}`);
+    return true;
+
+  } catch (error) {
+    console.error('Error al enviar correo de recuperacion:', error);
+    return false;
+  }
+};

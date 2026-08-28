@@ -99,6 +99,18 @@ export const getAuthDb = async () => {
     // Ya existe
   }
 
+  try {
+    await db.exec(`ALTER TABLE usuarios ADD COLUMN reset_token TEXT DEFAULT NULL;`);
+  } catch (error) {
+    // Ya existe
+  }
+
+  try {
+    await db.exec(`ALTER TABLE usuarios ADD COLUMN reset_token_expires TEXT DEFAULT NULL;`);
+  } catch (error) {
+    // Ya existe
+  }
+
   const adminHash = bcrypt.hashSync('admin123', 10);
   // Insertar usuario administrador si no existe
   await db.run(`

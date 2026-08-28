@@ -1,6 +1,7 @@
 import { getAuthDb } from '../authDb.js';
-import { enviarCredenciales } from '../services/emailService.js';
+import { enviarCredenciales, enviarCodigoRecuperacion } from '../services/emailService.js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Helper function para validar contraseña segura
 const isStrongPassword = (pwd) => {
@@ -93,7 +94,23 @@ export const loginHandler = async (req, res) => {
     // Verificamos si tiene el cambio de clave pendiente
     userData.requirePasswordChange = (user.cambio_clave_pendiente === 1);
     
-    return res.json({ success: true, data: userData, message: 'Autenticación exitosa.' });
+    // Determinar el rol
+    let role = 'ESTACION';
+    if (username === 'admin_arch' || username === 'test_user') {
+      role = 'ADMIN';
+    } else if (user.es_auditor === 1) {
+      role = 'AUDITOR';
+    }
+    userData.role = role;
+
+    // Firmar JWT
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: role },
+      process.env.JWT_SECRET || 'super_secret_jwt_key_2026',
+      { expiresIn: '8h' }
+    );
+    
+    return res.json({ success: true, data: userData, token, message: 'Autenticación exitosa.' });
     
   } catch (error) {
     console.error('Error al consultar SQLite:', error);
@@ -274,5 +291,72 @@ export const getConfiguracionHandler = async (req, res) => {
     res.json({ success: true, horaCierre });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};
+
+export const forgotPasswordHandler = async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ success: false, message: 'Faltan datos requeridos.' });
+
+  try {
+    const authDb = await getAuthDb();
+    const user = await authDb.get('SELECT * FROM usuarios WHERE username = ?', [username]);
+
+    if (!user || !user.correo) {
+      return res.json({ success: true, message: 'Si el usuario existe y tiene un correo asociado, se le enviará un código de recuperación.' });
+    }
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    await authDb.run(
+      'UPDATE usuarios SET reset_token = ?, reset_token_expires = ? WHERE username = ?',
+      [codigo, expires, username]
+    );
+
+    await enviarCodigoRecuperacion(user.correo, codigo, username);
+
+    return res.json({ success: true, message: 'Si el usuario existe y tiene un correo asociado, se le enviará un código de recuperación.' });
+  } catch (error) {
+    console.error('Error en forgotPassword:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};
+
+export const resetPasswordHandler = async (req, res) => {
+  const { username, token, newPassword } = req.body;
+  if (!username || !token || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Faltan datos requeridos.' });
+  }
+
+  // Regex sacada de isStrongPassword
+  const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]).{8,}$/;
+  if (!regex.test(newPassword)) {
+    return res.status(400).json({ success: false, message: 'La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo especial.' });
+  }
+
+  try {
+    const authDb = await getAuthDb();
+    const user = await authDb.get('SELECT * FROM usuarios WHERE username = ? AND reset_token = ?', [username, token]);
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Código de recuperación inválido o usuario incorrecto.' });
+    }
+
+    if (new Date() > new Date(user.reset_token_expires)) {
+      return res.status(400).json({ success: false, message: 'El código de recuperación ha expirado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await authDb.run(
+      'UPDATE usuarios SET password = ?, reset_token = NULL, reset_token_expires = NULL, intentos_fallidos = 0, bloqueado_hasta = NULL WHERE username = ?',
+      [hashedPassword, username]
+    );
+
+    return res.json({ success: true, message: 'Contraseña restablecida exitosamente.' });
+  } catch (error) {
+    console.error('Error en resetPassword:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
 };

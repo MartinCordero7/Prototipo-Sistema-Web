@@ -63,7 +63,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -74,6 +74,7 @@ const Login = () => {
       if (data.success) {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userData', JSON.stringify(data.data));
+        localStorage.setItem('token', data.token);
 
         if (data.data.requirePasswordChange) {
           navigate('/change-password');
@@ -176,7 +177,12 @@ const Login = () => {
           <p className="corp-body">
             ¿No tienes una cuenta?{' '}
             <Link to="/registro" className="corp-link step-register">
-              Registrate
+              Regístrate
+            </Link>
+          </p>
+          <p className="corp-body" style={{ marginTop: '12px' }}>
+            <Link to="/recuperar" className="corp-link">
+              ¿Olvidaste tu contraseña?
             </Link>
           </p>
         </div>
