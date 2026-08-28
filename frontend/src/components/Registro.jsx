@@ -10,13 +10,6 @@ import {
   IconSmallAlert
 } from './Icons';
 
-const COMERCIALIZADORAS = [
-  'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
-  'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
-  'Masgas', 'Pdv Ecuador', 'Petroleos y servicios', 'Petrolrios', 
-  'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel', 'Test'
-];
-
 const Registro = () => {
   const [formData, setFormData] = useState({
     comercializadora: '',
@@ -35,6 +28,19 @@ const Registro = () => {
   const [aceptaCorreos, setAceptaCorreos] = useState(false);
   const [showCondiciones, setShowCondiciones] = useState(false);
   const navigate = useNavigate();
+
+  const [comercializadorasList, setComercializadorasList] = useState([]);
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/api/comercializadoras`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setComercializadorasList(data.data);
+        }
+      })
+      .catch(err => console.error('Error fetching comercializadoras:', err));
+  }, []);
 
   // Fetch centros cuando cambia la comercializadora
   useEffect(() => {
@@ -174,8 +180,8 @@ const Registro = () => {
               className="corp-select"
               required
             >
-              <option value="">Seleccione una comercializadora...</option>
-              {COMERCIALIZADORAS.map(c => (
+              <option value="">-- Seleccione una opción --</option>
+              {comercializadorasList.map(c => (
                 <option key={c} value={c.toUpperCase()}>{c.toUpperCase()}</option>
               ))}
             </select>

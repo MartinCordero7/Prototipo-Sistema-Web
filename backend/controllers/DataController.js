@@ -1,4 +1,4 @@
-import { getCentrosDistribucionOracle } from '../models/DataModel.js';
+import { getCentrosDistribucionOracle, getComercializadorasOracle } from '../models/DataModel.js';
 import { getAuthDb } from '../authDb.js';
 
 export const getCentrosHandler = async (req, res) => {
@@ -14,6 +14,16 @@ export const getCentrosHandler = async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo centros:', error);
     res.status(500).json({ success: false, message: 'Error interno obteniendo los centros de distribución.' });
+  }
+};
+
+export const getComercializadorasHandler = async (req, res) => {
+  try {
+    const comercializadoras = await getComercializadorasOracle();
+    res.json({ success: true, data: comercializadoras });
+  } catch (error) {
+    console.error('Error obteniendo comercializadoras:', error);
+    res.status(500).json({ success: false, message: 'Error interno obteniendo comercializadoras.' });
   }
 };
 

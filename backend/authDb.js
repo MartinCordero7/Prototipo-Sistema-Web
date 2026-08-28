@@ -64,6 +64,17 @@ export const getAuthDb = async () => {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS delegados_auditoria (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comercializadora TEXT NOT NULL,
+      estado TEXT NOT NULL,
+      nombre_delegado TEXT NOT NULL,
+      correo TEXT NOT NULL UNIQUE,
+      oficio TEXT NOT NULL
+    );
+  `);
+
   await db.run(`
     INSERT OR IGNORE INTO configuracion (llave, valor)
     VALUES ('hora_cierre', '12')
@@ -111,6 +122,12 @@ export const getAuthDb = async () => {
     // Ya existe
   }
 
+  try {
+    await db.exec(`ALTER TABLE delegados_auditoria ADD COLUMN username TEXT DEFAULT NULL;`);
+  } catch (error) {
+    // Ya existe
+  }
+
   const adminHash = bcrypt.hashSync('admin123', 10);
   // Insertar usuario administrador si no existe
   await db.run(`
@@ -128,23 +145,6 @@ export const getAuthDb = async () => {
     INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
     VALUES ('test_id', 'test_user', ?, 'ESTACION DE PRUEBA', 'TERPEL', 0, NULL, 1)
   `, [testHash]);
-
-  const COMERCIALIZADORAS = [
-    'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
-    'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
-    'Masgas', 'Pdv Ecuador', 'Petroleos y servicios', 'Petrolrios', 
-    'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel'
-  ];
-
-  const auditorHash = bcrypt.hashSync('auditor123', 10);
-  for (const org of COMERCIALIZADORAS) {
-    const username = `auditor_${org.toLowerCase().replace(/ /g, '_')}`;
-    const id = `aud_${org.replace(/ /g, '')}`;
-    await db.run(`
-      INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente, es_auditor)
-      VALUES (?, ?, ?, ?, ?, 0, NULL, 1, 1)
-    `, [id, username, auditorHash, 'AUDITORIA', org.toUpperCase()]);
-  }
 
   // Asegurar que los auditores existentes tengan el flag
   await db.run(`UPDATE usuarios SET es_auditor = 1 WHERE nombre_estacion = 'AUDITORIA'`);

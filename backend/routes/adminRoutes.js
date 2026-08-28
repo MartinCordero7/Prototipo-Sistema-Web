@@ -1,5 +1,5 @@
 import express from 'express';
-import { getBlockedUsers, unblockUser, getConfigHandler, updateConfigHandler, getAlertasHistory, getEstacionesRegistradas, asignarAuditor } from '../controllers/AdminController.js';
+import { getBlockedUsers, unblockUser, getConfigHandler, updateConfigHandler, getAlertasHistory, getDelegados, saveDelegado, deleteDelegado, sendDelegadoEmail } from '../controllers/AdminController.js';
 
 import { authMiddleware, requireRole } from '../middleware/authMiddleware.js';
 
@@ -13,7 +13,9 @@ router.post('/unblock', unblockUser);
 router.get('/config', getConfigHandler);
 router.put('/config', updateConfigHandler);
 router.get('/alertas', getAlertasHistory);
-router.get('/estaciones-registradas', getEstacionesRegistradas);
-router.post('/asignar-auditor', asignarAuditor);
+router.get('/delegados', getDelegados);
+router.post('/delegados', saveDelegado);
+router.delete('/delegados/:id', deleteDelegado);
+router.post('/delegados/enviar-correo', sendDelegadoEmail);
 
 export default router;

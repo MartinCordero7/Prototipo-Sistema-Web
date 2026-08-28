@@ -27,13 +27,6 @@ const TABS = [
   { id: 'auditores',label: 'Gestión de Auditores', icon: <IconBuilding />, stepClass: 'step-nav-auditores' },
 ];
 
-const COMERCIALIZADORAS = [
-  'Clyan', 'Comdecsa', 'Copedesa', 'Ecucomsa', 'Energy Lider', 
-  'Energygas', 'Ep petroecuador', 'Gaspetrolium', 'Lisroni', 
-  'Masgas', 'Pdv Ecuador', 'Petroleos y servicios', 'Petrolrios', 
-  'Petromar', 'PetroWorld', 'Primax', 'Rexcomer', 'Servioil', 'Terpel', 'Test'
-];
-
 const AdminDashboard = () => {
   const [activeTab, setActiveTab]         = useState('horarios');
   const [blockedUsers, setBlockedUsers]   = useState([]);
@@ -53,8 +46,13 @@ const AdminDashboard = () => {
   
   // Auditoria
   const [comercializadoraAuditor, setComercializadoraAuditor] = useState('');
-  const [estacionesRegistradas, setEstacionesRegistradas] = useState([]);
+  const [comercializadorasList, setComercializadorasList] = useState([]);
+  const [delegados, setDelegados] = useState([]);
   const [loadingAuditores, setLoadingAuditores] = useState(false);
+  
+  const [editingDelegado, setEditingDelegado] = useState(null);
+  const [editForm, setEditForm] = useState({ nombre_delegado: '', username: '', correo: '', oficio: '' });
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const navigate = useNavigate();
 
@@ -104,8 +102,16 @@ const AdminDashboard = () => {
     const user = JSON.parse(userStr);
     if (user.comercializadora !== 'ADMINISTRADOR') { navigate('/formulario'); return; }
     setUserData(user);
-    fetchBlockedUsers(); fetchConfig(); fetchAlertasHistory();
+    fetchBlockedUsers(); fetchConfig(); fetchAlertasHistory(); fetchComercializadorasList();
   }, [navigate]);
+
+  const fetchComercializadorasList = async () => {
+    try {
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/comercializadoras`);
+      const d = await r.json();
+      if (d.success) setComercializadorasList(d.data);
+    } catch (e) { console.error('Error al cargar comercializadoras', e); }
+  };
 
   const fetchAlertasHistory = async () => {
     try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/alertas`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setAlertasHistory(d.data); }
@@ -137,20 +143,20 @@ const AdminDashboard = () => {
     } catch (e) { setError('Error al conectar.'); setUnlockTarget(null); }
   };
 
-  const fetchEstacionesRegistradas = async (comercializadora) => {
+  const fetchDelegados = async (comercializadora) => {
     if (!comercializadora) {
-      setEstacionesRegistradas([]);
+      setDelegados([]);
       return;
     }
     try {
       setLoadingAuditores(true);
       setError('');
-      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/estaciones-registradas?comercializadora=${comercializadora}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados?comercializadora=${comercializadora}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       const d = await r.json();
-      if (d.success) setEstacionesRegistradas(d.data);
-      else setError(d.message || 'Error obteniendo estaciones.');
+      if (d.success) setDelegados(d.data);
+      else setError(d.message || 'Error obteniendo delegados.');
     } catch (e) {
-      setError('Error de conexión al cargar estaciones.');
+      setError('Error de conexión al cargar delegados.');
     } finally {
       setLoadingAuditores(false);
     }
@@ -159,23 +165,75 @@ const AdminDashboard = () => {
   const handleComercializadoraChange = (e) => {
     const val = e.target.value;
     setComercializadoraAuditor(val);
-    fetchEstacionesRegistradas(val);
+    fetchDelegados(val);
+    setEditingDelegado(null);
   };
 
-  const handleDesignarAuditor = async (idUsuario) => {
+  const handleSaveDelegado = async (id) => {
     try {
+      if (!editForm.nombre_delegado || !editForm.correo || !editForm.oficio || !editForm.username) {
+        setError('Todos los campos son requeridos para el delegado.');
+        return;
+      }
       setLoadingAuditores(true);
-      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/asignar-auditor`, {
+      const payload = { ...editForm, comercializadora: comercializadoraAuditor };
+      if (id !== 'new') payload.id = id;
+
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ idUsuario, comercializadora: comercializadoraAuditor })
+        body: JSON.stringify(payload)
       });
       const d = await r.json();
       if (d.success) {
         setSuccessMessage(d.message);
-        fetchEstacionesRegistradas(comercializadoraAuditor); // Refresh list
+        setEditingDelegado(null);
+        fetchDelegados(comercializadoraAuditor);
       } else {
-        setError(d.message || 'Error al designar auditor.');
+        setError(d.message || 'Error al guardar delegado.');
+      }
+    } catch (e) {
+      setError('Error al conectar con el servidor.');
+    } finally {
+      setLoadingAuditores(false);
+    }
+  };
+
+  const handleDeleteDelegado = async (id) => {
+    setConfirmDeleteId(null);
+    try {
+      setLoadingAuditores(true);
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const d = await r.json();
+      if (d.success) {
+        setSuccessMessage(d.message);
+        fetchDelegados(comercializadoraAuditor);
+      } else {
+        setError(d.message || 'Error al eliminar.');
+      }
+    } catch (e) {
+      setError('Error al conectar con el servidor.');
+    } finally {
+      setLoadingAuditores(false);
+    }
+  };
+
+  const handleSendEmailDelegado = async (id) => {
+    try {
+      setLoadingAuditores(true);
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados/enviar-correo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ id })
+      });
+      const d = await r.json();
+      if (d.success) {
+        setSuccessMessage(d.message);
+      } else {
+        setError(d.message || 'Error al enviar correo.');
       }
     } catch (e) {
       setError('Error al conectar con el servidor.');
@@ -423,7 +481,7 @@ const AdminDashboard = () => {
           style={{ maxWidth: '400px' }}
         >
           <option value="">-- Seleccione Comercializadora --</option>
-          {COMERCIALIZADORAS.map(c => (
+          {comercializadorasList.map(c => (
             <option key={c} value={c.toUpperCase()}>{c.toUpperCase()}</option>
           ))}
         </select>
@@ -434,65 +492,120 @@ const AdminDashboard = () => {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}><IconBuilding /></div>
           <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>Seleccione una red</h3>
           <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
-            Elija una comercializadora para ver sus estaciones registradas.
+            Elija una comercializadora para gestionar sus delegados.
           </p>
         </div>
-      ) : loadingAuditores ? (
+      ) : loadingAuditores && delegados.length === 0 && editingDelegado !== 'new' ? (
         <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '80px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-          Cargando estaciones registradas...
-        </div>
-      ) : estacionesRegistradas.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 40px', backgroundColor: 'white', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
-          <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
-            No hay estaciones registradas aún para esta comercializadora.
-          </p>
+          Cargando delegados...
         </div>
       ) : (
         <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#0f172a' }}>Delegados (Auditores)</h3>
+            <button 
+              onClick={() => { setEditingDelegado('new'); setEditForm({ nombre_delegado: '', username: '', correo: '', oficio: '' }); }} 
+              className="corp-btn corp-btn-primary" 
+              style={{ padding: '8px 16px', height: 'auto', fontSize: '13px', width: 'auto' }}
+              disabled={editingDelegado === 'new'}
+            >
+              + Añadir Delegado
+            </button>
+          </div>
           <div className="corp-table-container">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '800px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Estación de Servicio</th>
-                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Usuario Asignado</th>
-                  <th style={{ padding: '14px 24px', textAlign: 'center', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Rol</th>
-                  <th style={{ padding: '14px 24px', textAlign: 'right', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Acción</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nombre del Delegado</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Usuario</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Correo</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'left', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Oficio</th>
+                  <th style={{ padding: '14px 24px', textAlign: 'right', color: '#475569', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {estacionesRegistradas.map((estacion) => (
-                  <tr key={estacion.id} style={{ borderBottom: '1px solid #f1f5f9' }}
+                {editingDelegado === 'new' && (
+                  <tr style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+                    <td style={{ padding: '16px 24px' }}>
+                      <input type="text" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} placeholder="Nombre" value={editForm.nombre_delegado} onChange={e => setEditForm({...editForm, nombre_delegado: e.target.value})} />
+                    </td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <input type="text" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} placeholder="Usuario" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} />
+                    </td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <input type="email" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} placeholder="Correo" value={editForm.correo} onChange={e => setEditForm({...editForm, correo: e.target.value})} />
+                    </td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <input type="text" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} placeholder="Oficio Nro." value={editForm.oficio} onChange={e => setEditForm({...editForm, oficio: e.target.value})} />
+                    </td>
+                    <td style={{ padding: '16px 24px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button onClick={() => setEditingDelegado(null)} className="corp-btn corp-btn-outline" style={{ padding: '6px 12px', fontSize: '12px', width: 'auto' }}>Cancelar</button>
+                      <button onClick={() => handleSaveDelegado('new')} className="corp-btn corp-btn-primary" style={{ padding: '6px 12px', fontSize: '12px', width: 'auto', backgroundColor: '#16a34a' }}>Guardar</button>
+                    </td>
+                  </tr>
+                )}
+                
+                {delegados.length === 0 && editingDelegado !== 'new' ? (
+                  <tr>
+                    <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No hay delegados registrados.</td>
+                  </tr>
+                ) : delegados.map((del) => (
+                  <tr key={del.id} style={{ borderBottom: '1px solid #f1f5f9' }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ fontWeight: '600', color: '#0f172a' }}>{estacion.nombre_estacion}</div>
-                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{estacion.correo}</div>
-                    </td>
-                    <td style={{ padding: '16px 24px', color: '#64748b' }}>{estacion.username}</td>
-                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                      {estacion.es_auditor === 1 ? (
-                        <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '600', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <IconCheck /> AUDITOR
-                        </span>
-                      ) : (
-                        <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '500', backgroundColor: '#f1f5f9', color: '#64748b' }}>
-                          Estándar
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                      {estacion.es_auditor === 1 ? (
-                        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>Designado</span>
-                      ) : (
-                        <button 
-                          onClick={() => handleDesignarAuditor(estacion.id)}
-                          className="corp-btn corp-btn-outline"
-                          style={{ padding: '6px 14px', fontSize: '12px', width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <IconUser /> Designar Auditor
-                        </button>
-                      )}
-                    </td>
+                    
+                    {editingDelegado === del.id ? (
+                      <>
+                        <td style={{ padding: '16px 24px' }}>
+                          <input type="text" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} placeholder="Nombre" value={editForm.nombre_delegado} onChange={e => setEditForm({...editForm, nombre_delegado: e.target.value})} />
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <input type="text" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} placeholder="Usuario" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} />
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <input type="email" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} value={editForm.correo} onChange={e => setEditForm({...editForm, correo: e.target.value})} />
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <input type="text" className="corp-input" style={{ padding: '6px 10px', fontSize: '13px' }} value={editForm.oficio} onChange={e => setEditForm({...editForm, oficio: e.target.value})} />
+                        </td>
+                        <td style={{ padding: '16px 24px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button onClick={() => setEditingDelegado(null)} className="corp-btn corp-btn-outline" style={{ padding: '6px 12px', fontSize: '12px', width: 'auto' }}>Cancelar</button>
+                          <button onClick={() => handleSaveDelegado(del.id)} className="corp-btn corp-btn-primary" style={{ padding: '6px 12px', fontSize: '12px', width: 'auto', backgroundColor: '#16a34a' }}>Guardar</button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td style={{ padding: '16px 24px', fontWeight: '600', color: '#0f172a' }}>{del.nombre_delegado}</td>
+                        <td style={{ padding: '16px 24px', color: '#64748b' }}>{del.username || '-'}</td>
+                        <td style={{ padding: '16px 24px', color: '#64748b' }}>{del.correo}</td>
+                        <td style={{ padding: '16px 24px', color: '#475569' }}>{del.oficio}</td>
+                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => { setEditingDelegado(del.id); setEditForm(del); }}
+                              className="corp-btn corp-btn-outline"
+                              style={{ padding: '4px 10px', fontSize: '11px', width: 'auto' }}
+                            >
+                              Editar
+                            </button>
+                            <button 
+                              onClick={() => handleSendEmailDelegado(del.id)}
+                              className="corp-btn corp-btn-outline"
+                              style={{ padding: '4px 10px', fontSize: '11px', width: 'auto', color: '#2563eb', borderColor: '#bfdbfe', backgroundColor: '#eff6ff' }}
+                            >
+                              <IconMail /> Enviar Correo
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDeleteId(del.id)}
+                              className="corp-btn corp-btn-outline"
+                              style={{ padding: '4px 10px', fontSize: '11px', width: 'auto', color: '#dc2626', borderColor: '#fecaca', backgroundColor: '#fef2f2' }}
+                            >
+                              <IconClose />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -623,6 +736,25 @@ const AdminDashboard = () => {
               <div className="corp-modal-footer">
                 <button onClick={() => setUnlockTarget(null)} className="corp-btn corp-btn-outline" style={{ width: 'auto' }}>Cancelar</button>
                 <button onClick={confirmUnblock} className="corp-btn corp-btn-primary" style={{ width: 'auto', backgroundColor: '#dc2626' }}>Sí, Desbloquear</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Confirmar Eliminar Delegado */}
+        {confirmDeleteId && (
+          <div className="corp-modal-overlay">
+            <div className="corp-modal-card">
+              <div className="corp-modal-header">
+                <h3 className="corp-modal-title"><span style={{ color: '#dc2626' }}><IconWarn /></span> Eliminar Delegado</h3>
+                <button onClick={() => setConfirmDeleteId(null)} className="corp-modal-close"><IconClose /></button>
+              </div>
+              <div className="corp-modal-body">
+                <p style={{ margin: 0 }}>¿Está seguro de eliminar este delegado? Se borrará también su acceso al sistema de forma permanente.</p>
+              </div>
+              <div className="corp-modal-footer">
+                <button onClick={() => setConfirmDeleteId(null)} className="corp-btn corp-btn-outline" style={{ width: 'auto' }}>Cancelar</button>
+                <button onClick={() => handleDeleteDelegado(confirmDeleteId)} className="corp-btn corp-btn-primary" style={{ width: 'auto', backgroundColor: '#dc2626' }}>Eliminar</button>
               </div>
             </div>
           </div>
