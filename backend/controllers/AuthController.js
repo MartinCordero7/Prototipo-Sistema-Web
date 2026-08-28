@@ -302,8 +302,12 @@ export const forgotPasswordHandler = async (req, res) => {
     const authDb = await getAuthDb();
     const user = await authDb.get('SELECT * FROM usuarios WHERE username = ?', [username]);
 
-    if (!user || !user.correo) {
-      return res.json({ success: true, message: 'Si el usuario existe y tiene un correo asociado, se le enviará un código de recuperación.' });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'El usuario ingresado no existe.' });
+    }
+    
+    if (!user.correo) {
+      return res.status(400).json({ success: false, message: 'Este usuario no tiene un correo configurado para recuperar la contraseña. Contacte al administrador.' });
     }
 
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
@@ -316,7 +320,7 @@ export const forgotPasswordHandler = async (req, res) => {
 
     await enviarCodigoRecuperacion(user.correo, codigo, username);
 
-    return res.json({ success: true, message: 'Si el usuario existe y tiene un correo asociado, se le enviará un código de recuperación.' });
+    return res.json({ success: true, message: `Código de recuperación enviado correctamente al correo registrado del usuario ${username}.` });
   } catch (error) {
     console.error('Error en forgotPassword:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor.' });

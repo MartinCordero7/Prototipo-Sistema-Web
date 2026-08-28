@@ -571,8 +571,16 @@ const FormularioES = () => {
       {/* BOTÓN FLOTANTE DE AYUDA */}
         <button 
           onClick={() => {
-            setTourKey(prev => prev + 1);
-            setRunTour(true);
+            if (activeTab !== 'formulario') {
+              setActiveTab('formulario');
+              setTimeout(() => {
+                setTourKey(prev => prev + 1);
+                setRunTour(true);
+              }, 150);
+            } else {
+              setTourKey(prev => prev + 1);
+              setRunTour(true);
+            }
           }}
           style={{
             position: 'fixed',
