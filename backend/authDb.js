@@ -128,16 +128,16 @@ export const getAuthDb = async () => {
     // Ya existe
   }
 
-  const adminHash = bcrypt.hashSync('admin123', 10);
+  const adminInitPassword = process.env.ADMIN_INIT_PASSWORD || 'admin123';
+  const adminHash = bcrypt.hashSync(adminInitPassword, 10);
   // Insertar usuario administrador si no existe
   await db.run(`
     INSERT OR IGNORE INTO usuarios (id, username, password, nombre_estacion, comercializadora, intentos_fallidos, bloqueado_hasta, cambio_clave_pendiente)
-    VALUES ('admin_id', 'admin_arch', ?, 'ADMINISTRADOR SISTEMA', 'ADMINISTRADOR', 0, NULL, 0)
+    VALUES ('admin_id', 'admin_arch', ?, 'ADMINISTRADOR SISTEMA', 'ADMINISTRADOR', 0, NULL, 1)
   `, [adminHash]);
 
-  await db.run(`
-    UPDATE usuarios SET cambio_clave_pendiente = 0 WHERE username = 'admin_arch'
-  `);
+  // Asegurar que si el administrador ya existe, se respete su estado (no forzamos cambio de clave aquí a menos que sea nuevo)
+  // El insert ignore arriba ya inserta con cambio_clave_pendiente = 1 si es nuevo.
 
   const testHash = bcrypt.hashSync('password123', 10);
   // Insertar usuario de prueba

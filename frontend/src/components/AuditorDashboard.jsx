@@ -116,7 +116,7 @@ const AuditorDashboard = () => {
     try {
       setLoading(true);
       const url = `${import.meta.env.VITE_API_URL}/api/auditor/estado-diario?comercializadora=${encodeURIComponent(comercializadoraName)}&fechaDesde=${desde}&fechaHasta=${hasta}`;
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const response = await fetch(url, { credentials: 'include' });
       const data = await response.json();
       
       if (data.success) {

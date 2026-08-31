@@ -114,29 +114,29 @@ const AdminDashboard = () => {
   };
 
   const fetchAlertasHistory = async () => {
-    try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/alertas`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setAlertasHistory(d.data); }
+    try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/alertas`, { credentials: 'include' }); const d = await r.json(); if (d.success) setAlertasHistory(d.data); }
     catch (e) { console.error(e); } finally { setLoading(false); }
   };
   const fetchConfig = async () => {
-    try { const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setHoraCierre(d.horaCierre); }
+    try { const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/config`, { credentials: 'include' }); const d = await r.json(); if (d.success) setHoraCierre(d.horaCierre); }
     catch (e) { console.error(e); }
   };
   const handleUpdateConfig = async () => {
     try {
       setUpdatingConfig(true); setConfigSuccess(''); setError('');
-      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/config`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ horaCierre: parseInt(horaCierre, 10) }) });
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/config`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ horaCierre: parseInt(horaCierre, 10) }) });
       const d = await r.json();
       if (d.success) { setConfigSuccess(d.message); setTimeout(() => setConfigSuccess(''), 3000); } else setError(d.message || 'Error actualizando horario.');
     } catch (e) { setError('Error al conectar.'); } finally { setUpdatingConfig(false); }
   };
   const fetchBlockedUsers = async () => {
-    try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/blocked-users`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }); const d = await r.json(); if (d.success) setBlockedUsers(d.data); else setError(d.message || 'Error.'); }
+    try { setLoading(true); const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/blocked-users`, { credentials: 'include' }); const d = await r.json(); if (d.success) setBlockedUsers(d.data); else setError(d.message || 'Error.'); }
     catch (e) { setError('Error al conectar.'); } finally { setLoading(false); }
   };
   const confirmUnblock = async () => {
     if (!unlockTarget) return;
     try {
-      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/unblock`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ username: unlockTarget }) });
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/unblock`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: unlockTarget }) });
       const d = await r.json();
       if (d.success) { setSuccessMessage(d.message); setUnlockTarget(null); fetchBlockedUsers(); }
       else { setError(d.message || 'Error.'); setUnlockTarget(null); }
@@ -151,7 +151,7 @@ const AdminDashboard = () => {
     try {
       setLoadingAuditores(true);
       setError('');
-      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados?comercializadora=${comercializadora}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados?comercializadora=${comercializadora}`, { credentials: 'include' });
       const d = await r.json();
       if (d.success) setDelegados(d.data);
       else setError(d.message || 'Error obteniendo delegados.');
@@ -181,7 +181,8 @@ const AdminDashboard = () => {
 
       const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload)
       });
       const d = await r.json();
@@ -205,7 +206,7 @@ const AdminDashboard = () => {
       setLoadingAuditores(true);
       const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        credentials: 'include'
       });
       const d = await r.json();
       if (d.success) {
@@ -226,7 +227,8 @@ const AdminDashboard = () => {
       setLoadingAuditores(true);
       const r = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delegados/enviar-correo`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ id })
       });
       const d = await r.json();

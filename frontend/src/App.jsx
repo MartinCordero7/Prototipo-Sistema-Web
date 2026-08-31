@@ -15,8 +15,17 @@ const Header = () => {
   const location = useLocation();
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Error durante el logout:', error);
+    }
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userData');
     navigate('/login');
   };
 

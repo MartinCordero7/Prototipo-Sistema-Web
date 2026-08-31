@@ -66,6 +66,7 @@ const Login = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       });
 
@@ -74,7 +75,7 @@ const Login = () => {
       if (data.success) {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userData', JSON.stringify(data.data));
-        localStorage.setItem('token', data.token);
+        // Token is now handled by HttpOnly cookie
 
         if (data.data.requirePasswordChange) {
           navigate('/change-password');

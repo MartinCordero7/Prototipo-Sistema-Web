@@ -44,9 +44,9 @@ const ConfigModal = ({ isOpen, onClose, userData, setUserData, setCustomAlert })
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/update-profile`, {
         method: 'PUT',
         headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           username: userData.username,
           currentPassword: configData.currentPassword,

@@ -14,9 +14,7 @@ const HistorialEstacion = () => {
     try {
       setLoading(true);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/history`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include'
       });
       const data = await response.json();
       if (data.success) {

@@ -250,9 +250,9 @@ const FormularioES = () => {
       fetch(`${import.meta.env.VITE_API_URL}/api/submit`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
           correoUsuario: userData.correo,

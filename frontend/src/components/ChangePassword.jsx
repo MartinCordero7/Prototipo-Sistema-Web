@@ -72,7 +72,8 @@ const ChangePassword = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/change-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           username: userData.username,
           oldPassword: formData.oldPassword,

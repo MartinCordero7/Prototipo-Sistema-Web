@@ -2,6 +2,7 @@ import { getAuthDb } from '../authDb.js';
 import { enviarCredenciales, enviarCodigoRecuperacion } from '../services/emailService.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 // Helper function para validar contraseña segura
 const isStrongPassword = (pwd) => {
@@ -106,16 +107,33 @@ export const loginHandler = async (req, res) => {
     // Firmar JWT
     const token = jwt.sign(
       { id: user.id, username: user.username, role: role },
-      process.env.JWT_SECRET || 'super_secret_jwt_key_2026',
+      process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
     
-    return res.json({ success: true, data: userData, token, message: 'Autenticación exitosa.' });
+    // Configurar cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 8 * 60 * 60 * 1000 // 8 horas
+    });
+
+    return res.json({ success: true, data: userData, message: 'Autenticación exitosa.' });
     
   } catch (error) {
     console.error('Error al consultar SQLite:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
+};
+
+export const logoutHandler = (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  return res.json({ success: true, message: 'Sesión cerrada correctamente.' });
 };
 
 export const changePasswordHandler = async (req, res) => {
@@ -310,7 +328,7 @@ export const forgotPasswordHandler = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Este usuario no tiene un correo configurado para recuperar la contraseña. Contacte al administrador.' });
     }
 
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const codigo = crypto.randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     await authDb.run(

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { getAuthDb } from './authDb.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -13,12 +14,28 @@ import { connectDB } from './db.js';
 const app = express();
 const PORT = 3000;
 
+// Fail-Fast: Validar variables de entorno críticas
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+  process.exit(1);
+}
+if (!process.env.ADMIN_INIT_PASSWORD) {
+  console.error('FATAL ERROR: ADMIN_INIT_PASSWORD is not defined in environment variables.');
+  process.exit(1);
+}
+
 // Seguridad de cabeceras HTTP
 app.use(helmet());
 
 // Configuracion de CORS (Ajustar origin al dominio real en produccion)
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    callback(null, true); // Permite cualquier origen (útil para pruebas en red local y distintos puertos)
+  },
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // Prevención de ataques DoS (Límite de solicitudes)
 const apiLimiter = rateLimit({

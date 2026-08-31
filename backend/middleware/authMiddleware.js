@@ -2,15 +2,15 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_2026';
+const SECRET = process.env.JWT_SECRET;
 
 export const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Ahora el token vendrá en las cookies, no en la cabecera Authorization
+  const token = req.cookies.token;
+
+  if (!token) {
     return res.status(401).json({ success: false, message: 'Acceso no autorizado. Token no proporcionado.' });
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, SECRET);
