@@ -1,6 +1,16 @@
 import request from 'supertest';
 import { app } from '../server.js';
 import { getAuthDb } from '../authDb.js';
+import jwt from 'jsonwebtoken';
+
+const generateTestCookie = () => {
+  const token = jwt.sign(
+    { id: 'test_id', username: 'test_user', role: 'ESTACION' },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  return `token=${token}`;
+};
 
 describe('API de Ingreso de Datos', () => {
   let db;
@@ -13,6 +23,7 @@ describe('API de Ingreso de Datos', () => {
     it('debe rechazar si falta información obligatoria (ej. sin centro)', async () => {
       const res = await request(app)
         .post('/api/submit')
+        .set('Cookie', generateTestCookie())
         .send({
           fecha: '2026-08-27T10:00',
           productosSeleccionados: ['Diésel Premium'],
@@ -40,6 +51,7 @@ describe('API de Ingreso de Datos', () => {
       // 1er Envío (Debe ser exitoso)
       const res1 = await request(app)
         .post('/api/submit')
+        .set('Cookie', generateTestCookie())
         .send(payload);
       
       expect(res1.statusCode).toBe(200);
@@ -48,6 +60,7 @@ describe('API de Ingreso de Datos', () => {
       // 2do Envío (Debe detectar el duplicado y devolver 400)
       const res2 = await request(app)
         .post('/api/submit')
+        .set('Cookie', generateTestCookie())
         .send(payload);
       
       expect(res2.statusCode).toBe(400);
@@ -70,6 +83,7 @@ describe('API de Ingreso de Datos', () => {
 
       const res = await request(app)
         .post('/api/submit')
+        .set('Cookie', generateTestCookie())
         .send(payload);
 
       expect(res.statusCode).toBe(400);
